@@ -342,16 +342,16 @@ public class PlayerMovementController : MonoBehaviour
 		Vector3 pos = _transform.position;
 		if ( Mathf.Abs(_targetPosition.y - pos.y) > 0.1f )
 		{
-			pos.y = Mathf.Lerp(pos.y, _targetPosition.y, 10 * timeDelta);
+			pos.y = Mathf.Lerp(pos.y, _targetPosition.y, 15 * timeDelta);
 		}
 		else
 		{
-			pos.x = Mathf.Lerp(pos.x, _targetPosition.x, 10 * timeDelta);
+			pos.x = Mathf.Lerp(pos.x, _targetPosition.x, 15 * timeDelta);
 		}
 		
 		_transform.position = pos;
 		
-		if ( (_transform.position - _targetPosition).magnitude < 0.05f )
+		if ( (_transform.position - _targetPosition).magnitude < 0.1f )
 		{	
 			_transform.position = _targetPosition;
 			_movementState.SetState("OnGround");
