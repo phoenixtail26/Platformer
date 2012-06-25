@@ -14,6 +14,7 @@ public class JumpTester : MonoBehaviour
 	{
 		_jumpTimer.Reset();
 		_jumpStopTimer.Reset();
+		// blah
 	}
 	
 	// Update is called once per frame
