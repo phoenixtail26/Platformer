@@ -1,0 +1,16 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Code/PlayerMovementController.cs">
+    <Files>
+      <File FileName="Assets/Code/PrototypeController.cs" Line="43" Column="26" />
+      <File FileName="Assets/Code/CameraFollow2D.cs" Line="27" Column="11" />
+      <File FileName="Assets/Code/JumpTester.cs" Line="22" Column="31" />
+      <File FileName="Assets/Code/PlayerMovementController.cs" Line="46" Column="51" />
+      <File FileName="Assets/Code/PlayerAnimationController.cs" Line="11" Column="25" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>

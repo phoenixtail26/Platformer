@@ -1,0 +1,8 @@
+K 13
+svn:externals
+V 230
+^/EZGUI/trunk                                                    EZGUI
+^/Animation%20Tree/trunk/Unity%20Project/Assets/Animation%20Tree AnimationTree
+^/TastyFramework/trunk                                           TastyFramework
+
+END
