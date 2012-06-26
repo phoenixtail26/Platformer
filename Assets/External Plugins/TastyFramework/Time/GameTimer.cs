@@ -18,6 +18,14 @@ namespace Framework
                 }
                 return false;
             }
+			
+			set
+			{
+				if ( value )
+				{
+					_time = _timeLength;
+				}
+			}
         }
 		
 		public bool running

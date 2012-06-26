@@ -44,6 +44,7 @@ public class PlayerMovementController : MonoBehaviour
 	int _groundLayer = 0;
 	
 	GameTimer _onGroundTimer = new GameTimer(0.025f);
+	GameTimer _inAirTimer = new GameTimer(0.025f);
 	
 	Vector3 _leftFootOffset = Vector3.zero;
 	Vector3 _rightFootOffset = Vector3.zero;
@@ -62,6 +63,16 @@ public class PlayerMovementController : MonoBehaviour
 	
 	float _leftFootDistanceToGround = 0;
 	float _rightFootDistanceToGround = 0;
+	
+	bool _jumpWhenPossible = true;
+	
+	public bool inAir
+	{
+		get
+		{
+			return _inAirTimer.hasFinished;
+		}
+	}
 	
 	public bool onGround
 	{
@@ -156,6 +167,8 @@ public class PlayerMovementController : MonoBehaviour
 		
 		UpdateFootDistanceToGround();
 		
+		//Debug.Log(_inAirTimer.GetTimeRemaining());
+		
 		_rigidbody.velocity = _moveVel;		
 		_lastPosition = _transform.position;
 	}
@@ -195,6 +208,9 @@ public class PlayerMovementController : MonoBehaviour
 		{
 			_movementState.SetState("InAir");
 		}
+		
+		_inAirTimer.Reset();
+		CheckForPossibleJump();
 	}
 	
 	void UpdateDirection()
@@ -288,9 +304,25 @@ public class PlayerMovementController : MonoBehaviour
 			}
 		}
 		
+		_inAirTimer.Update(timeDelta);
+		
 		if ( onGround )
 		{
 			_movementState.SetState( "OnGround" );
+		}
+		
+		CheckForPossibleJump();
+	}
+	
+	void CheckForPossibleJump()
+	{
+		if ( onGround || IsOneFootOnTheGround() )
+			{
+			if ( _jumpWhenPossible )
+			{
+				_jumpWhenPossible = false;
+				ExecuteJump();
+			}
 		}
 	}
 	
@@ -309,7 +341,7 @@ public class PlayerMovementController : MonoBehaviour
 				
 				float yVal = (_inputVector.y + 1) / 2.0f;
 				
-				_moveVel.x = Mathf.Lerp(0,_direction.x * _runSpeed, _inputVector.x);
+				_moveVel.x = Mathf.Lerp(0,_direction.x * _runSpeed, Mathf.Abs(_inputVector.x));
 				_moveVel.y = Mathf.Lerp(0, _jumpSpeed, yVal);
 				
 				_movementState.SetState( "InAir");
@@ -353,6 +385,11 @@ public class PlayerMovementController : MonoBehaviour
 		
 		if ( (_transform.position - _targetPosition).magnitude < 0.1f )
 		{	
+			// if the player is trying to run at the end of the climb, give them a velocity head start
+			if ( _runPressed )
+			{
+				_moveVel.x = _runSpeed * 0.5f * _direction.x;
+			}
 			_transform.position = _targetPosition;
 			_movementState.SetState("OnGround");
 		}
@@ -418,19 +455,32 @@ public class PlayerMovementController : MonoBehaviour
 		_rigidbody.velocity = Vector3.zero;
 	}
 	
+	void ExecuteJump()
+	{
+		_moveVel = _rigidbody.velocity;
+		_moveVel.y = _jumpSpeed;
+		_rigidbody.velocity = _moveVel;
+		_onGroundTimer.Reset();
+		_inAirTimer.hasFinished = true;
+	}
+	
 	public void StartJump()
 	{
 		_jumpPressed = true;
 		
 		if ( _movementState.currentState == "InAir" || _movementState.currentState == "OnGround" )
 		{
-			if ( onGround || IsOneFootOnTheGround() )
+			if ( !inAir )
 			{
-				_moveVel = _rigidbody.velocity;
-				_moveVel.y = _jumpSpeed;
-				_rigidbody.velocity = _moveVel;
-				_onGroundTimer.Reset();
-				//_onGround = false;
+				ExecuteJump();
+			}
+			else if ( onGround || IsOneFootOnTheGround() )
+			{
+				ExecuteJump();
+			}
+			else if ( !onGround && minFootDistanceToGround < 0.75f )	// if close to ground, jump when on ground
+			{
+				_jumpWhenPossible = true;
 			}
 		}
 	}
@@ -438,6 +488,7 @@ public class PlayerMovementController : MonoBehaviour
 	public void EndJump()
 	{
 		_jumpPressed = false;
+		_jumpWhenPossible = false;
 		
 		_moveVel = _rigidbody.velocity;
 		if ( _moveVel.y > _shortJumpSpeed )
@@ -504,6 +555,7 @@ public class PlayerMovementController : MonoBehaviour
 			if ( IsOneFootOnTheGround() )
 			{
 				_onGroundTimer.Update(GameTime.deltaTime);
+				_inAirTimer.Reset();
 			}
 		}
 	}
@@ -515,6 +567,7 @@ public class PlayerMovementController : MonoBehaviour
 			if ( IsOneFootOnTheGround() )
 			{
 				_onGroundTimer.Update(GameTime.deltaTime);
+				//_inAirTimer.Reset();
 			}
 		}
 	}
