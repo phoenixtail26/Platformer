@@ -64,7 +64,9 @@ public class PlayerMovementController : MonoBehaviour
 	float _leftFootDistanceToGround = 0;
 	float _rightFootDistanceToGround = 0;
 	
-	bool _jumpWhenPossible = true;
+	bool _jumpWhenPossible = false;
+	
+	Vector3 _groundNormal = Vector3.up;
 	
 	public bool inAir
 	{
@@ -98,6 +100,14 @@ public class PlayerMovementController : MonoBehaviour
 		}
 	}
 	
+	public bool inLedgeGrab
+	{
+		get
+		{
+			return (_movementState.currentState == "LedgeGrab");
+		}
+	}
+	
 	void Awake()
 	{
 		_groundLayer = LayerMask.NameToLayer("Ground");
@@ -106,8 +116,6 @@ public class PlayerMovementController : MonoBehaviour
 		_rigidbody = rigidbody;
 		_collider = collider;
 		_bounds = _collider.bounds;
-		
-		Debug.Log(_rigidbody);
 		
 		_leftFootOffset.x = -_bounds.extents.x + 0.1f;
 		_leftFootOffset.y = 0.05f;
@@ -186,8 +194,16 @@ public class PlayerMovementController : MonoBehaviour
 		{
 			accelVal = _runDirChangeDecel;
 		}
+		
+	/*	Vector3 forwardDir = new Vector3(-_groundNormal.y, _groundNormal.x, 0);
+		forwardDir *= -_direction.x;
+		Debug.DrawLine(_transform.position, _transform.position + forwardDir, Color.cyan);*/
+		
 		_moveVel.x += (_inputVector.x * accelVal) * timeDelta;
+		//_moveVel += forwardDir * (_inputVector.x * accelVal) * timeDelta;
 		_moveVel.x = Mathf.Clamp(_moveVel.x,-_runSpeed, _runSpeed);
+		
+		
 		
 		//Debug.Log(_inputVector.x);
 		
@@ -196,7 +212,7 @@ public class PlayerMovementController : MonoBehaviour
 		//Debug.Log(_moveVel.x);
 		
 		// Apply gravity
-		_moveVel.y += -_gravity * timeDelta;
+		_moveVel += -_groundNormal * (_gravity * timeDelta);
 		
 		// Check that one foot is on the ground
 		if ( !IsOneFootOnTheGround() )
@@ -208,6 +224,8 @@ public class PlayerMovementController : MonoBehaviour
 		{
 			_movementState.SetState("InAir");
 		}
+		
+		//Debug.DrawLine(_transform.position, _transform.position + _groundNormal, Color.white );
 		
 		_inAirTimer.Reset();
 		CheckForPossibleJump();
@@ -280,7 +298,7 @@ public class PlayerMovementController : MonoBehaviour
 		}
 		
 		// Falling, so check for ledges to grab hold of
-		if ( _moveVel.y <= 0 && _inputVector.y >= 0 )
+		if ( _inputVector.y >= 0 )// _moveVel.y <= 0 && _inputVector.y >= 0 )
 		{
 			Vector3 ledgePosition = Vector3.zero;
 			if ( CheckForLedgeGrab( ref ledgePosition ) )
@@ -308,6 +326,11 @@ public class PlayerMovementController : MonoBehaviour
 		
 		if ( onGround )
 		{
+			// if the player isn't trying to move when landing, decelerate quickly to help them stick landings easier
+			if ( _inputVector.x == 0 )
+			{
+				_moveVel.x *= 0.5f;
+			}
 			_movementState.SetState( "OnGround" );
 		}
 		
@@ -317,7 +340,7 @@ public class PlayerMovementController : MonoBehaviour
 	void CheckForPossibleJump()
 	{
 		if ( onGround || IsOneFootOnTheGround() )
-			{
+		{
 			if ( _jumpWhenPossible )
 			{
 				_jumpWhenPossible = false;
@@ -416,6 +439,7 @@ public class PlayerMovementController : MonoBehaviour
 			// if there's no wall just above the hand height
 			if ( !Physics.Raycast( aboveHandPos, _direction, _ledgeGrabCheckDistance, _groundLayerMask ) )
 			{
+				
 				Vector3 newPos = _transform.position;
 					
 				newPos.x = info.point.x;
@@ -501,9 +525,15 @@ public class PlayerMovementController : MonoBehaviour
 	void UpdateFootDistanceToGround()
 	{
 		RaycastHit info;
+		Vector3 normal = Vector3.zero;
+		
+		Vector3 leftFootNormal = Vector3.up;
+		Vector3 rightFootNormal = Vector3.up;
+		
 		if ( Physics.Raycast( _transform.position + _leftFootOffset, Vector3.down, out info, Mathf.Infinity, _groundLayerMask ) )
 		{
 			_leftFootDistanceToGround = info.distance;
+			leftFootNormal = info.normal;
 		}
 		else
 		{
@@ -513,10 +543,20 @@ public class PlayerMovementController : MonoBehaviour
 		if ( Physics.Raycast( _transform.position + _rightFootOffset, Vector3.down, out info, Mathf.Infinity, _groundLayerMask ) )
 		{
 			_rightFootDistanceToGround = info.distance;
+			rightFootNormal = info.normal;
 		}
 		else
 		{
 			_rightFootDistanceToGround = Mathf.Infinity;
+		}
+		
+		if ( _leftFootDistanceToGround < _rightFootDistanceToGround )
+		{
+			_groundNormal = leftFootNormal;
+		}
+		else
+		{
+			_groundNormal = rightFootNormal;
 		}
 	}
 	
