@@ -205,7 +205,7 @@ public class PlayerMovementController : MonoBehaviour
 		
 		if ( _delayInput )
 		{
-			if ( _inputDelayTimer.Update(GameTime.deltaTime) )
+			if ( _inputDelayTimer.Update(GameTime.deltaTime) || !inAir || onGround )
 			{
 				_delayInput = false;
 			}
