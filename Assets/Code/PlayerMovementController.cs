@@ -68,6 +68,29 @@ public class PlayerMovementController : MonoBehaviour
 	
 	Vector3 _groundNormal = Vector3.up;
 	
+	// OnWall variables
+	bool _onWall = false;
+	Vector3 _onWallNormal = Vector3.zero;
+	GameTimer _letGoOfWallTimer = new GameTimer(0.15f);
+	bool _ableToWallJump = false;
+	[SerializeField]
+	float _wallSlideSpeed = 2;
+	[SerializeField]
+	float _wallRunGravityFactor = 0.75f;
+	
+	GameTimer _inputDelayTimer = new GameTimer(0.5f);
+	bool _delayInput = false;
+		
+	bool _wallAtHandHeight = false;
+	
+	public Vector3 moveVel
+	{
+		get
+		{
+			return _moveVel;
+		}			
+	}
+	
 	public bool inAir
 	{
 		get
@@ -108,6 +131,14 @@ public class PlayerMovementController : MonoBehaviour
 		}
 	}
 	
+	public bool inWallSlide
+	{
+		get
+		{
+			return (_movementState.currentState == "OnWall");
+		}
+	}
+	
 	void Awake()
 	{
 		_groundLayer = LayerMask.NameToLayer("Ground");
@@ -134,6 +165,7 @@ public class PlayerMovementController : MonoBehaviour
 		_movementState.AddState( "InAir", InAirUpdate );
 		_movementState.AddState( "LedgeGrab", LedgeGrabUpdate );
 		_movementState.AddState( "ClimbingLedge", LedgeClimbUpdate );
+		_movementState.AddState( "OnWall", OnWallUpdate );
 		_movementState.SetState( "OnGround" );
 		
 		_lastPosition = _transform.position;
@@ -170,8 +202,20 @@ public class PlayerMovementController : MonoBehaviour
 			_onGround = false;
 		}*/
 		
-		_runPressed = false;
-		_inputVector.x = 0;
+		
+		if ( _delayInput )
+		{
+			if ( _inputDelayTimer.Update(GameTime.deltaTime) )
+			{
+				_delayInput = false;
+			}
+		}
+		
+		if ( !_delayInput )
+		{
+			_runPressed = false;
+			_inputVector.x = 0;
+		}
 		
 		UpdateFootDistanceToGround();
 		
@@ -179,6 +223,8 @@ public class PlayerMovementController : MonoBehaviour
 		
 		_rigidbody.velocity = _moveVel;		
 		_lastPosition = _transform.position;
+		
+		_onWall = false;
 	}
 	
 	void OnGroundUpdate( float timeDelta )
@@ -222,7 +268,14 @@ public class PlayerMovementController : MonoBehaviour
 		
 		if ( !onGround )
 		{
-			_movementState.SetState("InAir");
+			if ( _onWall && _wallAtHandHeight)
+			{
+				_movementState.SetState("OnWall");
+			}
+			else
+			{
+				_movementState.SetState("InAir");
+			}
 		}
 		
 		//Debug.DrawLine(_transform.position, _transform.position + _groundNormal, Color.white );
@@ -285,18 +338,126 @@ public class PlayerMovementController : MonoBehaviour
 		
 		DecelIfNoInput( timeDelta );
 		
-		
 		// Apply gravity
 		_moveVel.y += -_gravity * GameTime.deltaTime;
 		
 		// Make sure the player doesn't fall too fast
 		_moveVel.y = Mathf.Clamp(_moveVel.y, -16, 16 );
 		
+		/*if ( _moveVel.y > 0 && minFootDistanceToGround > 0.4f && _onWall )
+		{
+			_moveVel.y = 0;
+		}*/
+		
+		
 		if ( !onGround )
 		{
 			Debug.DrawLine(_lastPosition, _transform.position, debugColor, 10000);
 		}
 		
+		DoLedgeGrabCheck();
+		
+		_inAirTimer.Update(timeDelta);
+		
+		if ( onGround )
+		{
+			// if the player isn't trying to move when landing, decelerate quickly to help them stick landings easier
+			if ( _inputVector.x == 0 )
+			{
+				_moveVel.x *= 0.5f;
+			}
+			_movementState.SetState( "OnGround" );
+		} 
+		else if ( _onWall && _wallAtHandHeight )
+		{
+			_movementState.SetState( "OnWall");
+		}
+		
+		CheckForPossibleJump();
+	}
+	
+	void OnWallUpdate( float timeDelta )
+	{
+		if ( !_jumpPressed )
+		{
+			_ableToWallJump = true;
+		}
+			
+		// if pulling away from the wall
+		if ( _inputVector.x * _onWallNormal.x > 0 )
+		{
+			if ( _letGoOfWallTimer.Update( timeDelta ) )
+			{
+				UpdateDirection();
+				_movementState.SetState("InAir");
+				_ableToWallJump = false;
+				return;
+			}
+		}
+		else
+		{
+			_letGoOfWallTimer.Reset();
+		}
+		
+		float accelVal = _airAccel;
+		
+		if ( _inputVector.x * _onWallNormal.x < 0 )
+		{
+			_moveVel.x += (_inputVector.x * accelVal) * GameTime.deltaTime;
+			_moveVel.x = Mathf.Clamp(_moveVel.x,-_runSpeed, _runSpeed);
+		}
+				
+		// if the player pressed the jump button while attached to wall
+		if ( _ableToWallJump && _jumpPressed )
+		{
+			_inputVector.x = _onWallNormal.x;
+			
+			UpdateDirection();
+			
+			_moveVel.x = Mathf.Lerp(0,_direction.x * _runSpeed, Mathf.Abs(_inputVector.x));
+			_moveVel.y = _jumpSpeed;// Mathf.Lerp(0, _jumpSpeed, yVal);
+			
+			_movementState.SetState( "InAir");
+			_ableToWallJump = false;
+			_inputDelayTimer.Reset();
+			_delayInput = true;
+		}
+		
+		float grav = _gravity * _wallRunGravityFactor;
+		_moveVel.y += (-grav * GameTime.deltaTime);
+		
+		// Make sure the player doesn't fall too fast
+		_moveVel.y = Mathf.Clamp(_moveVel.y, -_wallSlideSpeed, 16 );
+				
+		if ( DoLedgeGrabCheck() )
+		{
+			_ableToWallJump = false;
+		}		
+		
+		_inAirTimer.Update(timeDelta);
+		
+		if ( onGround )
+		{
+			// if the player isn't trying to move when landing, decelerate quickly to help them stick landings easier
+			if ( _inputVector.x == 0 )
+			{
+				_moveVel.x *= 0.5f;
+			}
+			_movementState.SetState( "OnGround" );
+			_ableToWallJump = false;
+		} 
+		else if ( _direction.x * _onWallNormal.x > 0 || !_onWall || !_wallAtHandHeight )
+		{
+			// player is facing away from wall
+			_movementState.SetState("InAir" );
+			_ableToWallJump = false;
+		}
+		
+		CheckForPossibleJump();
+	}
+	
+	bool DoLedgeGrabCheck()
+	{
 		// Falling, so check for ledges to grab hold of
 		if ( _inputVector.y >= 0 )// _moveVel.y <= 0 && _inputVector.y >= 0 )
 		{
@@ -318,23 +479,13 @@ public class PlayerMovementController : MonoBehaviour
 					_moveVel.x = 0;
 					
 					_jumpPressed = false;
+					
+					return true;
 				}
 			}
 		}
 		
-		_inAirTimer.Update(timeDelta);
-		
-		if ( onGround )
-		{
-			// if the player isn't trying to move when landing, decelerate quickly to help them stick landings easier
-			if ( _inputVector.x == 0 )
-			{
-				_moveVel.x *= 0.5f;
-			}
-			_movementState.SetState( "OnGround" );
-		}
-		
-		CheckForPossibleJump();
+		return false;
 	}
 	
 	void CheckForPossibleJump()
@@ -434,6 +585,8 @@ public class PlayerMovementController : MonoBehaviour
 		RaycastHit info;
 		if ( Physics.Raycast( handPos, _direction, out info, _ledgeGrabCheckDistance, _groundLayerMask ) )
 		{
+			_wallAtHandHeight = true;
+			
 			Vector3 aboveHandPos = _transform.position + offset + Vector3.up * _ledgeGrabCheckHeight / 2.0f;
 			Debug.DrawLine(aboveHandPos, aboveHandPos + _direction, Color.cyan, 10);
 			// if there's no wall just above the hand height
@@ -461,16 +614,25 @@ public class PlayerMovementController : MonoBehaviour
 				return true;
 			}
 		}
+		else
+		{
+			_wallAtHandHeight = false;
+		}
+		
 		
 		return false;
 	}
 	
 	public void Move( Vector2 inputVec )
 	{
-		_inputVector = inputVec;
-		if ( _inputVector.x != 0 )
+		
+		if ( !_delayInput )
 		{
-			_runPressed = true;
+			_inputVector = inputVec;
+			if ( _inputVector.x != 0 )
+			{
+				_runPressed = true;
+			}
 		}
 	}
 	
@@ -597,6 +759,12 @@ public class PlayerMovementController : MonoBehaviour
 				_onGroundTimer.Update(GameTime.deltaTime);
 				_inAirTimer.Reset();
 			}
+			
+			if ( Mathf.Approximately(Mathf.Abs(other.contacts[0].normal.x), 1 ) )
+			{
+				_onWall = true;	
+				_onWallNormal = other.contacts[0].normal;
+			}
 		}
 	}
 	
@@ -609,6 +777,12 @@ public class PlayerMovementController : MonoBehaviour
 				_onGroundTimer.Update(GameTime.deltaTime);
 				//_inAirTimer.Reset();
 			}
+		}
+		
+		if ( Mathf.Approximately(Mathf.Abs(other.contacts[0].normal.x), 1 ) )
+		{
+			_onWall = true;	
+			_onWallNormal = other.contacts[0].normal;
 		}
 	}
 }

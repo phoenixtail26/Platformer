@@ -31,12 +31,16 @@ public class PlatformerCamera : MonoBehaviour
 	int _lastViewingDirection = 0;
 	bool _updateViewingDirection = false;
 	
+	bool _continueToTrack = false;
+	
 	// Use this for initialization
 	void Start () 
 	{
 		_transform = transform;
 		_playerTrans = player.transform;
 		_tartgetPos = _playerTrans.position;
+		
+		_transform.position = _tartgetPos;
 		
 		_viewingDirectionChangeTimer = new GameTimer(_viewDirectionDelay);
 	}
@@ -48,9 +52,19 @@ public class PlatformerCamera : MonoBehaviour
 		Vector3 playerPos = _playerTrans.position;
 		
 		_tartgetPos.x = playerPos.x;
-				
+		
+		if ( player.inLedgeGrab || player.inWallSlide )
+		{
+			_continueToTrack = true;
+		}
+		
+		if ( player.onGround )
+		{
+			_continueToTrack = false;
+		}
+		
 		// Only update the camera Y in certain situations
-		if ( player.onGround || player.inLedgeGrab || playerPos.y < pos.y )
+		if ( player.onGround || _continueToTrack || playerPos.y < pos.y )
 		{
 			_tartgetPos.y = playerPos.y;
 		}	
