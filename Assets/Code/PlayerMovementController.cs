@@ -71,7 +71,7 @@ public class PlayerMovementController : MonoBehaviour
 	// OnWall variables
 	bool _onWall = false;
 	Vector3 _onWallNormal = Vector3.zero;
-	GameTimer _letGoOfWallTimer = new GameTimer(0.15f);
+	GameTimer _letGoOfWallTimer = new GameTimer(0.2f);
 	bool _ableToWallJump = false;
 	[SerializeField]
 	float _wallSlideSpeed = 2;
@@ -83,6 +83,11 @@ public class PlayerMovementController : MonoBehaviour
 		
 	bool _wallAtHandHeight = false;
 	
+	bool _readyForDoubleJump = false;
+	
+	[SerializeField]
+	float _doubleJumpFactor = 0.75f;
+		
 	public Vector3 moveVel
 	{
 		get
@@ -230,7 +235,6 @@ public class PlayerMovementController : MonoBehaviour
 	void OnGroundUpdate( float timeDelta )
 	{
 		//Debug.Log(_inputVector.x);
-		
 		UpdateDirection();
 		
 		// Apply running acceleration
@@ -383,6 +387,7 @@ public class PlayerMovementController : MonoBehaviour
 			_ableToWallJump = true;
 		}
 			
+		
 		// if pulling away from the wall
 		if ( _inputVector.x * _onWallNormal.x > 0 )
 		{
@@ -391,6 +396,7 @@ public class PlayerMovementController : MonoBehaviour
 				UpdateDirection();
 				_movementState.SetState("InAir");
 				_ableToWallJump = false;
+				_readyForDoubleJump = false;
 				return;
 			}
 		}
@@ -419,8 +425,13 @@ public class PlayerMovementController : MonoBehaviour
 			
 			_movementState.SetState( "InAir");
 			_ableToWallJump = false;
+			
 			_inputDelayTimer.Reset();
 			_delayInput = true;
+			
+			_readyForDoubleJump = true;
+			
+			return;
 		}
 		
 		float grav = _gravity * _wallRunGravityFactor;
@@ -519,6 +530,8 @@ public class PlayerMovementController : MonoBehaviour
 				_moveVel.y = Mathf.Lerp(0, _jumpSpeed, yVal);
 				
 				_movementState.SetState( "InAir");
+				
+				_readyForDoubleJump = true;
 			}
 			// if pulling down
 			else if ( _inputVector.y < 0 )
@@ -641,13 +654,15 @@ public class PlayerMovementController : MonoBehaviour
 		_rigidbody.velocity = Vector3.zero;
 	}
 	
-	void ExecuteJump()
+	void ExecuteJump( float jumpFactor = 1 )
 	{
 		_moveVel = _rigidbody.velocity;
-		_moveVel.y = _jumpSpeed;
+		_moveVel.y = _jumpSpeed * jumpFactor;
 		_rigidbody.velocity = _moveVel;
 		_onGroundTimer.Reset();
 		_inAirTimer.hasFinished = true;
+		
+		_readyForDoubleJump = true;
 	}
 	
 	public void StartJump()
@@ -656,7 +671,12 @@ public class PlayerMovementController : MonoBehaviour
 		
 		if ( _movementState.currentState == "InAir" || _movementState.currentState == "OnGround" )
 		{
-			if ( !inAir )
+			if ( inAir && _readyForDoubleJump )
+			{
+				ExecuteJump( _doubleJumpFactor );
+				_readyForDoubleJump = false;
+			}
+			else if ( !inAir )
 			{
 				ExecuteJump();
 			}
