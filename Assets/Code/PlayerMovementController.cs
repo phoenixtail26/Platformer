@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using Framework;
 
+[RequireComponent(typeof(MovementSenses))]
 public class PlayerMovementController : MonoBehaviour 
 {
 	[SerializeField]
@@ -87,6 +88,9 @@ public class PlayerMovementController : MonoBehaviour
 	
 	[SerializeField]
 	float _doubleJumpFactor = 0.75f;
+	
+	[SerializeField]
+	MovementSenses _senses;
 		
 	public Vector3 moveVel
 	{
@@ -156,12 +160,12 @@ public class PlayerMovementController : MonoBehaviour
 		_leftFootOffset.x = -_bounds.extents.x + 0.1f;
 		_leftFootOffset.y = 0.05f;
 		
-		Debug.DrawLine(_transform.position, _transform.position + _leftFootOffset, Color.white, 10000);
+		//Debug.DrawLine(_transform.position, _transform.position + _leftFootOffset, Color.white, 10000);
 		
 		_rightFootOffset.x = _bounds.extents.x - 0.1f;
 		_rightFootOffset.y = 0.05f;
 		
-		Debug.DrawLine(_transform.position, _transform.position + _rightFootOffset, Color.white, 10000);
+		//Debug.DrawLine(_transform.position, _transform.position + _rightFootOffset, Color.white, 10000);
 		
 		_handOffset.x = _bounds.extents.x - 0.1f;
 		_handOffset.y = _bounds.extents.y * 2 - 0.05f;
@@ -172,6 +176,8 @@ public class PlayerMovementController : MonoBehaviour
 		_movementState.AddState( "ClimbingLedge", LedgeClimbUpdate );
 		_movementState.AddState( "OnWall", OnWallUpdate );
 		_movementState.SetState( "OnGround" );
+		
+		_senses = GetComponent<MovementSenses>();
 		
 		_lastPosition = _transform.position;
 	}
