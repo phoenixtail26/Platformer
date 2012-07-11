@@ -2,11 +2,20 @@
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Code/PlayerMovementController.cs">
     <Files>
-      <File FileName="Assets/Code/PlatformerCamera.cs" Line="64" Column="6" />
-      <File FileName="Assets/Code/PlayerMovementController.cs" Line="5" Column="43" />
+      <File FileName="Assets/Code/PlatformerCamera.cs" Line="1" Column="1" />
       <File FileName="Assets/External Plugins/TastyFramework/Time/GameTimer.cs" Line="1" Column="1" />
-      <File FileName="Assets/Code/PrototypeController.cs" Line="43" Column="11" />
+      <File FileName="Assets/Code/PrototypeController.cs" Line="1" Column="1" />
+      <File FileName="Assets/Code/PlayerMovementController.cs" Line="622" Column="4" />
+      <File FileName="Assets/Code/MovementSenses.cs" Line="92" Column="32" />
+      <File FileName="Assets/Code/Editor/MovementSensesInspector.cs" Line="14" Column="35" />
     </Files>
+    <Pads>
+      <Pad Id="MonoDevelop.Debugger.WatchPad">
+        <State>
+          <Value>_center</Value>
+        </State>
+      </Pad>
+    </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />

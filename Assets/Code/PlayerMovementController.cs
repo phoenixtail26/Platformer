@@ -61,13 +61,8 @@ public class PlayerMovementController : MonoBehaviour
 	Vector2 _inputVector = Vector3.zero;
 	
 	Vector3 _targetPosition = Vector3.zero;
-	
-	float _leftFootDistanceToGround = 0;
-	float _rightFootDistanceToGround = 0;
-	
+			
 	bool _jumpWhenPossible = false;
-	
-	Vector3 _groundNormal = Vector3.up;
 	
 	// OnWall variables
 	bool _onWall = false;
@@ -123,15 +118,7 @@ public class PlayerMovementController : MonoBehaviour
 			return _direction;
 		}
 	}
-	
-	public float minFootDistanceToGround
-	{
-		get
-		{
-			return Mathf.Min(_leftFootDistanceToGround, _rightFootDistanceToGround);
-		}
-	}
-	
+		
 	public bool inLedgeGrab
 	{
 		get
@@ -201,6 +188,8 @@ public class PlayerMovementController : MonoBehaviour
 		}*/
 		
 		//Debug.Log(_inputVector.x);
+		_senses.UpdateSenses(_direction);
+		
 		_movementState.Update(GameTime.deltaTime);
 				
 		// Determine if the player is on the ground
@@ -227,8 +216,6 @@ public class PlayerMovementController : MonoBehaviour
 			_runPressed = false;
 			_inputVector.x = 0;
 		}
-		
-		UpdateFootDistanceToGround();
 		
 		//Debug.Log(_inAirTimer.GetTimeRemaining());
 		
@@ -268,7 +255,7 @@ public class PlayerMovementController : MonoBehaviour
 		//Debug.Log(_moveVel.x);
 		
 		// Apply gravity
-		_moveVel += -_groundNormal * (_gravity * timeDelta);
+		_moveVel += -_senses.groundNormal * (_gravity * timeDelta);
 		
 		// Check that one foot is on the ground
 		if ( !IsOneFootOnTheGround() )
@@ -690,7 +677,7 @@ public class PlayerMovementController : MonoBehaviour
 			{
 				ExecuteJump();
 			}
-			else if ( !onGround && minFootDistanceToGround < 0.75f )	// if close to ground, jump when on ground
+			else if ( !onGround && _senses.minFootDistanceToGround < 0.75f )	// if close to ground, jump when on ground
 			{
 				_jumpWhenPossible = true;
 			}
@@ -710,64 +697,9 @@ public class PlayerMovementController : MonoBehaviour
 		_rigidbody.velocity = _moveVel;
 	}
 	
-	void UpdateFootDistanceToGround()
-	{
-		RaycastHit info;
-		Vector3 normal = Vector3.zero;
-		
-		Vector3 leftFootNormal = Vector3.up;
-		Vector3 rightFootNormal = Vector3.up;
-		
-		if ( Physics.Raycast( _transform.position + _leftFootOffset, Vector3.down, out info, Mathf.Infinity, _groundLayerMask ) )
-		{
-			_leftFootDistanceToGround = info.distance;
-			leftFootNormal = info.normal;
-		}
-		else
-		{
-			_leftFootDistanceToGround = Mathf.Infinity;
-		}
-		
-		if ( Physics.Raycast( _transform.position + _rightFootOffset, Vector3.down, out info, Mathf.Infinity, _groundLayerMask ) )
-		{
-			_rightFootDistanceToGround = info.distance;
-			rightFootNormal = info.normal;
-		}
-		else
-		{
-			_rightFootDistanceToGround = Mathf.Infinity;
-		}
-		
-		if ( _leftFootDistanceToGround < _rightFootDistanceToGround )
-		{
-			_groundNormal = leftFootNormal;
-		}
-		else
-		{
-			_groundNormal = rightFootNormal;
-		}
-	}
-	
 	bool IsOneFootOnTheGround()
 	{
-		/*bool oneFootOnTheGround = false;
-		
-		Debug.DrawLine( _transform.position + _leftFootOffset, _transform.position + _leftFootOffset + Vector3.down * 0.3f, Color.white, 10 );
-		
-		if ( Physics.Raycast( _transform.position + _leftFootOffset, Vector3.down, 0.3f, _groundLayerMask ) )
-		{
-			oneFootOnTheGround = true;
-		}
-		
-		Debug.DrawLine( _transform.position + _rightFootOffset, _transform.position + _rightFootOffset + Vector3.down * 0.3f, Color.white, 10 );
-		
-		if ( Physics.Raycast( _transform.position + _rightFootOffset, Vector3.down, 0.3f, _groundLayerMask ) )
-		{
-			oneFootOnTheGround = true;
-		}
-		return oneFootOnTheGround;*/
-		
-		if ( minFootDistanceToGround < 0.3f )
+		if ( _senses.minFootDistanceToGround < 0.3f )
 		{
 			return true;
 		}
