@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using Framework;
 
+[RequireComponent(typeof(MovementSenses))]
 public class PlayerMovementController : MonoBehaviour 
 {
 	[SerializeField]
@@ -23,11 +24,6 @@ public class PlayerMovementController : MonoBehaviour
 	
 	[SerializeField]
 	float _gravity = -0.5f;
-	
-	[SerializeField]
-	float _ledgeGrabCheckHeight = 0.2f;
-	[SerializeField]
-	float _ledgeGrabCheckDistance = 0.3f;
 		
 	Rigidbody _rigidbody;
 	Transform _transform;
@@ -60,13 +56,8 @@ public class PlayerMovementController : MonoBehaviour
 	Vector2 _inputVector = Vector3.zero;
 	
 	Vector3 _targetPosition = Vector3.zero;
-	
-	float _leftFootDistanceToGround = 0;
-	float _rightFootDistanceToGround = 0;
-	
+			
 	bool _jumpWhenPossible = false;
-	
-	Vector3 _groundNormal = Vector3.up;
 	
 	// OnWall variables
 	bool _onWall = false;
@@ -81,68 +72,49 @@ public class PlayerMovementController : MonoBehaviour
 	GameTimer _inputDelayTimer = new GameTimer(0.5f);
 	bool _delayInput = false;
 		
-	bool _wallAtHandHeight = false;
+	//bool _wallAtHandHeight = false;
 	
 	bool _readyForDoubleJump = false;
 	
 	[SerializeField]
 	float _doubleJumpFactor = 0.75f;
+	
+	[SerializeField]
+	MovementSenses _senses;
 		
+	#region Accessors
+	
 	public Vector3 moveVel
 	{
-		get
-		{
-			return _moveVel;
-		}			
+		get { return _moveVel; }			
 	}
 	
 	public bool inAir
 	{
-		get
-		{
-			return _inAirTimer.hasFinished;
-		}
+		get { return _inAirTimer.hasFinished; }
 	}
 	
 	public bool onGround
 	{
-		get 
-		{ 
-			return _onGroundTimer.hasFinished;
-		}
+		get { return _onGroundTimer.hasFinished; }
 	}
 	
 	public Vector3 facingDirection
 	{
-		get 
-		{
-			return _direction;
-		}
+		get { return _direction; }
 	}
-	
-	public float minFootDistanceToGround
-	{
-		get
-		{
-			return Mathf.Min(_leftFootDistanceToGround, _rightFootDistanceToGround);
-		}
-	}
-	
+		
 	public bool inLedgeGrab
 	{
-		get
-		{
-			return (_movementState.currentState == "LedgeGrab");
-		}
+		get { return (_movementState.currentState == "LedgeGrab"); }
 	}
 	
 	public bool inWallSlide
 	{
-		get
-		{
-			return (_movementState.currentState == "OnWall");
-		}
+		get { return (_movementState.currentState == "OnWall"); }
 	}
+	
+	#endregion
 	
 	void Awake()
 	{
@@ -156,22 +128,26 @@ public class PlayerMovementController : MonoBehaviour
 		_leftFootOffset.x = -_bounds.extents.x + 0.1f;
 		_leftFootOffset.y = 0.05f;
 		
-		Debug.DrawLine(_transform.position, _transform.position + _leftFootOffset, Color.white, 10000);
+		//Debug.DrawLine(_transform.position, _transform.position + _leftFootOffset, Color.white, 10000);
 		
 		_rightFootOffset.x = _bounds.extents.x - 0.1f;
 		_rightFootOffset.y = 0.05f;
 		
-		Debug.DrawLine(_transform.position, _transform.position + _rightFootOffset, Color.white, 10000);
+		//Debug.DrawLine(_transform.position, _transform.position + _rightFootOffset, Color.white, 10000);
 		
 		_handOffset.x = _bounds.extents.x - 0.1f;
 		_handOffset.y = _bounds.extents.y * 2 - 0.05f;
 		
+		_movementState.AddState( "Nothing" , NothingUpdate );
 		_movementState.AddState( "OnGround", OnGroundUpdate );
 		_movementState.AddState( "InAir", InAirUpdate );
 		_movementState.AddState( "LedgeGrab", LedgeGrabUpdate );
 		_movementState.AddState( "ClimbingLedge", LedgeClimbUpdate );
+		_movementState.AddState( "ClimbingDownLedge", LedgeClimbDownUpdate );
 		_movementState.AddState( "OnWall", OnWallUpdate );
 		_movementState.SetState( "OnGround" );
+		
+		_senses = GetComponent<MovementSenses>();
 		
 		_lastPosition = _transform.position;
 	}
@@ -195,6 +171,8 @@ public class PlayerMovementController : MonoBehaviour
 		}*/
 		
 		//Debug.Log(_inputVector.x);
+		_senses.UpdateSenses(_direction);
+		
 		_movementState.Update(GameTime.deltaTime);
 				
 		// Determine if the player is on the ground
@@ -222,8 +200,6 @@ public class PlayerMovementController : MonoBehaviour
 			_inputVector.x = 0;
 		}
 		
-		UpdateFootDistanceToGround();
-		
 		//Debug.Log(_inAirTimer.GetTimeRemaining());
 		
 		_rigidbody.velocity = _moveVel;		
@@ -232,10 +208,17 @@ public class PlayerMovementController : MonoBehaviour
 		_onWall = false;
 	}
 	
+	void NothingUpdate( float timeDelta )
+	{
+		_moveVel = Vector3.zero;
+	}
+	
 	void OnGroundUpdate( float timeDelta )
 	{
 		//Debug.Log(_inputVector.x);
 		UpdateDirection();
+		
+		_senses.UpdateFloorChecks( _bounds.extents.x * 2 );
 		
 		// Apply running acceleration
 		float accelVal = _runAccel;
@@ -262,7 +245,7 @@ public class PlayerMovementController : MonoBehaviour
 		//Debug.Log(_moveVel.x);
 		
 		// Apply gravity
-		_moveVel += -_groundNormal * (_gravity * timeDelta);
+		_moveVel += -_senses.groundNormal * (_gravity * timeDelta);
 		
 		// Check that one foot is on the ground
 		if ( !IsOneFootOnTheGround() )
@@ -272,7 +255,7 @@ public class PlayerMovementController : MonoBehaviour
 		
 		if ( !onGround )
 		{
-			if ( _onWall && _wallAtHandHeight)
+			if ( _onWall && _senses.isWallAtHandHeight )
 			{
 				_movementState.SetState("OnWall");
 			}
@@ -282,10 +265,88 @@ public class PlayerMovementController : MonoBehaviour
 			}
 		}
 		
+		// Look for climb down
+		if ( _jumpWhenPossible && _inputVector.y < 0 )
+		{
+			if ( CheckForClimbDown() )
+			{
+				_movementState.SetState("ClimbingDownLedge");
+				//_movementState.SetState("Nothing");
+				_moveVel.y = 0;
+				_moveVel.x = 0;
+				
+				_jumpPressed = false;
+				_jumpWhenPossible = false;
+				
+				//Debug.LogError("stop");
+				return;
+			}
+			
+			_jumpPressed = false;
+			_jumpWhenPossible = false;
+		}		
+		
 		//Debug.DrawLine(_transform.position, _transform.position + _groundNormal, Color.white );
 		
 		_inAirTimer.Reset();
 		CheckForPossibleJump();
+	}
+	
+	bool CheckForClimbDown()
+	{
+		if ( !_senses.isGroundInFrontOfLeftFoot || !_senses.isGroundInFrontOfRightFoot )
+		{
+			//Debug.Log("climb down");
+			
+			Vector3 offset = _senses.offsets.rightFootGroundCheck;
+			if ( !_senses.isGroundInFrontOfLeftFoot )
+			{
+				offset = _senses.offsets.leftFootGroundCheck;
+			}
+			
+			// If both check fail, climb down in the direction the player is facing
+			if ( !_senses.isGroundInFrontOfLeftFoot && ! _senses.isGroundInFrontOfRightFoot )
+			{
+				offset = _senses.offsets.leftFootGroundCheck;
+				
+				if ( _direction.x < 0 )
+				{
+					offset = _senses.offsets.rightFootGroundCheck;
+				}
+			}
+			
+			//Debug.DrawLine( _transform.position + _senses.offsets.rightFootGroundCheck, _transform.position + _senses.offsets.rightFootGroundCheck + Vector3.down * 0.75f, Color.black, 1000);
+			// Make sure that there isn't ground close below the ledge we're about to climb down onto
+			if ( !Physics.Raycast( _transform.position + offset, Vector3.down, 2f, _groundLayerMask ) )
+			{
+				// Turn player's back to ledge
+				if ( _senses.isGroundInFrontOfRightFoot || _senses.isGroundInFrontOfLeftFoot ) // Don't turn around if both feet checks fail
+				{
+					_inputVector.x = Vector3.right.x;
+					if ( !_senses.isGroundInFrontOfRightFoot )
+					{
+						_inputVector.x = Vector3.left.x;
+					}
+					UpdateDirection();
+				}
+				
+				// Position player at ledge edge
+				Vector3 newPos = _transform.position;
+				Vector3 ledgePosition = _senses.groundLedgePosition;
+				newPos.x = ledgePosition.x + _direction.x * _bounds.extents.x;
+				//_transform.position = newPos;
+				
+				// Calculate target position
+				newPos = _transform.position;
+				newPos.x = ledgePosition.x - (_direction.x * _bounds.extents.x);
+				newPos.y = ledgePosition.y - _bounds.extents.y * 2;
+				_targetPosition = newPos;
+				
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	void UpdateDirection()
@@ -372,7 +433,7 @@ public class PlayerMovementController : MonoBehaviour
 			}
 			_movementState.SetState( "OnGround" );
 		} 
-		else if ( _onWall && _wallAtHandHeight )
+		else if ( _onWall && _senses.isWallAtHandHeight && _senses.isWallAtCrotchHeight )
 		{
 			_movementState.SetState( "OnWall");
 		}
@@ -457,11 +518,12 @@ public class PlayerMovementController : MonoBehaviour
 			_movementState.SetState( "OnGround" );
 			_ableToWallJump = false;
 		} 
-		else if ( _direction.x * _onWallNormal.x > 0 || !_onWall || !_wallAtHandHeight )
+		else if ( _direction.x * _onWallNormal.x > 0 || !_onWall || !_senses.isWallAtCrotchHeight )
 		{
 			// player is facing away from wall
 			_movementState.SetState("InAir" );
 			_ableToWallJump = false;
+			_readyForDoubleJump = false;
 		}
 		
 		CheckForPossibleJump();
@@ -558,6 +620,10 @@ public class PlayerMovementController : MonoBehaviour
 	
 	void LedgeClimbUpdate( float timeDelta )
 	{
+		///////////
+		// TEMP
+		///////////
+		
 		Vector3 pos = _transform.position;
 		if ( Mathf.Abs(_targetPosition.y - pos.y) > 0.1f )
 		{
@@ -582,9 +648,34 @@ public class PlayerMovementController : MonoBehaviour
 		}
 	}
 	
+	void LedgeClimbDownUpdate( float timeDelta )
+	{
+		///////////
+		// TEMP
+		///////////
+		
+		Vector3 pos = _transform.position;
+		if ( Mathf.Abs(_targetPosition.x - pos.x) > 0.1f )
+		{
+			pos.x = Mathf.Lerp(pos.x, _targetPosition.x, 15 * timeDelta);
+		}
+		else
+		{			
+			pos.y = Mathf.Lerp(pos.y, _targetPosition.y, 15 * timeDelta);
+		}
+		
+		_transform.position = pos;
+		
+		if ( (_transform.position - _targetPosition).magnitude < 0.1f )
+		{
+			_transform.position = _targetPosition;
+			_movementState.SetState("LedgeGrab");
+		}
+	}
+	
 	public bool CheckForLedgeGrab( ref Vector3 ledgePosition )
 	{
-		Vector3 offset = _handOffset;
+		/*Vector3 offset = _handOffset;
 		
 		if ( _direction.x < 0 )
 		{
@@ -630,6 +721,12 @@ public class PlayerMovementController : MonoBehaviour
 		else
 		{
 			_wallAtHandHeight = false;
+		}*/
+		
+		if ( _senses.isWallAtHandHeight && !_senses.isWallAboveHandHeight )
+		{
+			ledgePosition = _senses.ledgePosition;
+			return true;
 		}
 		
 		
@@ -678,13 +775,15 @@ public class PlayerMovementController : MonoBehaviour
 			}
 			else if ( !inAir )
 			{
-				ExecuteJump();
+				_jumpWhenPossible = true;
+				//ExecuteJump();
 			}
 			else if ( onGround || IsOneFootOnTheGround() )
 			{
-				ExecuteJump();
+				_jumpWhenPossible = true;
+				//ExecuteJump();
 			}
-			else if ( !onGround && minFootDistanceToGround < 0.75f )	// if close to ground, jump when on ground
+			else if ( !onGround && _senses.minFootDistanceToGround < 0.75f )	// if close to ground, jump when on ground
 			{
 				_jumpWhenPossible = true;
 			}
@@ -704,64 +803,9 @@ public class PlayerMovementController : MonoBehaviour
 		_rigidbody.velocity = _moveVel;
 	}
 	
-	void UpdateFootDistanceToGround()
-	{
-		RaycastHit info;
-		Vector3 normal = Vector3.zero;
-		
-		Vector3 leftFootNormal = Vector3.up;
-		Vector3 rightFootNormal = Vector3.up;
-		
-		if ( Physics.Raycast( _transform.position + _leftFootOffset, Vector3.down, out info, Mathf.Infinity, _groundLayerMask ) )
-		{
-			_leftFootDistanceToGround = info.distance;
-			leftFootNormal = info.normal;
-		}
-		else
-		{
-			_leftFootDistanceToGround = Mathf.Infinity;
-		}
-		
-		if ( Physics.Raycast( _transform.position + _rightFootOffset, Vector3.down, out info, Mathf.Infinity, _groundLayerMask ) )
-		{
-			_rightFootDistanceToGround = info.distance;
-			rightFootNormal = info.normal;
-		}
-		else
-		{
-			_rightFootDistanceToGround = Mathf.Infinity;
-		}
-		
-		if ( _leftFootDistanceToGround < _rightFootDistanceToGround )
-		{
-			_groundNormal = leftFootNormal;
-		}
-		else
-		{
-			_groundNormal = rightFootNormal;
-		}
-	}
-	
 	bool IsOneFootOnTheGround()
 	{
-		/*bool oneFootOnTheGround = false;
-		
-		Debug.DrawLine( _transform.position + _leftFootOffset, _transform.position + _leftFootOffset + Vector3.down * 0.3f, Color.white, 10 );
-		
-		if ( Physics.Raycast( _transform.position + _leftFootOffset, Vector3.down, 0.3f, _groundLayerMask ) )
-		{
-			oneFootOnTheGround = true;
-		}
-		
-		Debug.DrawLine( _transform.position + _rightFootOffset, _transform.position + _rightFootOffset + Vector3.down * 0.3f, Color.white, 10 );
-		
-		if ( Physics.Raycast( _transform.position + _rightFootOffset, Vector3.down, 0.3f, _groundLayerMask ) )
-		{
-			oneFootOnTheGround = true;
-		}
-		return oneFootOnTheGround;*/
-		
-		if ( minFootDistanceToGround < 0.3f )
+		if ( _senses.minFootDistanceToGround < 0.3f )
 		{
 			return true;
 		}
