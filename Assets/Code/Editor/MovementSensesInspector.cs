@@ -13,29 +13,41 @@ public class MovementSensesInspector : Editor
 		
 		Transform t = _senses.transform;
 		
-		_senses._footOffset = Handles.PositionHandle( t.position + _senses._footOffset, Quaternion.identity ) - t.position;
+		MovementSenses.SenseOffsets offsets = _senses.offsets;
 		
-		_senses.handOffsetP1 = Handles.PositionHandle( t.position + _senses.handOffsetP1, Quaternion.identity ) - t.position;
-		_senses.handOffsetP2 = Handles.PositionHandle( t.position + _senses.handOffsetP2, Quaternion.identity ) - t.position;
+		offsets.footOffset = Handles.PositionHandle( t.position + offsets.footOffset, Quaternion.identity ) - t.position;
+		Handles.Label(t.position + offsets.footOffset, "Foot Check");
 		
-		_senses.handOffsetP2.y = _senses.handOffsetP1.y;
+		offsets.handOffsetP1 = Handles.PositionHandle( t.position + offsets.handOffsetP1, Quaternion.identity ) - t.position;
+		offsets.handOffsetP2 = Handles.PositionHandle( t.position + offsets.handOffsetP2, Quaternion.identity ) - t.position;
+		Handles.Label(t.position + offsets.handOffsetP1, "Hand Wall Check");
 		
-		_senses.aboveHandOffset = Handles.PositionHandle( t.position + _senses.aboveHandOffset, Quaternion.identity ) - t.position;
+		offsets.handOffsetP2.y = offsets.handOffsetP1.y;
 		
-		_senses.crotchOffset = Handles.PositionHandle( t.position + _senses.crotchOffset, Quaternion.identity ) - t.position;
+		offsets.aboveHandOffset = Handles.PositionHandle( t.position + offsets.aboveHandOffset, Quaternion.identity ) - t.position;
+		Handles.Label(t.position + offsets.aboveHandOffset, "Above Hand Wall Check");
+		
+		offsets.crotchOffset = Handles.PositionHandle( t.position + offsets.crotchOffset, Quaternion.identity ) - t.position;
+		Handles.Label(t.position + offsets.crotchOffset, "Crotch Wall Check");
+		
+		offsets.groundCheckOffset = Handles.PositionHandle( t.position + offsets.groundCheckOffset, Quaternion.identity ) - t.position;
+		Handles.Label(t.position + offsets.groundCheckOffset, "Ground Check");
 		
 		_senses.RecalcValues();
 		
-		Handles.DrawLine(t.position, t.position + _senses._leftFootOffset);
-		Handles.DrawLine(t.position, t.position + _senses._rightFootOffset);
+		Handles.DrawLine(t.position, t.position + offsets.leftFootOffset);
+		Handles.DrawLine(t.position, t.position + offsets.rightFootOffset);
 		
-		Handles.DrawLine(t.position + _senses.handOffsetP1, t.position + _senses.handOffsetP2);
+		Handles.DrawLine(t.position + offsets.handOffsetP1, t.position + offsets.handOffsetP2);
 		
 		Handles.color = Color.red;
-		Handles.DrawLine(t.position + _senses.aboveHandOffset, t.position + _senses.aboveHandOffsetP2);
+		Handles.DrawLine(t.position + offsets.aboveHandOffset, t.position + offsets.aboveHandOffsetP2);
 		
 		Handles.color = Color.blue;
-		Handles.DrawLine(t.position + _senses.crotchOffset, t.position + _senses.crotchOffsetP2);
+		Handles.DrawLine(t.position + offsets.crotchOffset, t.position + offsets.crotchOffsetP2);
+		
+		Handles.DrawLine(t.position + offsets.leftFootOffset, t.position + offsets.leftFootGroundCheck);
+		Handles.DrawLine(t.position + offsets.rightFootOffset, t.position + offsets.rightFootGroundCheck);
 		
 	}
 }
