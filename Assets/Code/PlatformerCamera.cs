@@ -53,7 +53,7 @@ public class PlatformerCamera : MonoBehaviour
 		
 		_tartgetPos.x = playerPos.x;
 		
-		if ( player.inLedgeGrab || player.inWallSlide )
+		if ( player.inLedgeGrab || player.inWallSlide || player.inWallClimb )
 		{
 			_continueToTrack = true;
 		}

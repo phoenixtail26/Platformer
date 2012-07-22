@@ -21,6 +21,10 @@ public class PlayerMovementController : MonoBehaviour
 	float _airAccel = 20;
 	[SerializeField]
 	float _airDrag = 0.96875f;
+	[SerializeField]
+	float _wallClimbSpeed = 2;
+	[SerializeField]
+	float _wallClimbSlideSpeed = 4;
 	
 	[SerializeField]
 	float _gravity = -0.5f;
@@ -114,6 +118,11 @@ public class PlayerMovementController : MonoBehaviour
 		get { return (_movementState.currentState == "OnWall"); }
 	}
 	
+	public bool inWallClimb
+	{
+		get { return (_movementState.currentState == "OnClimbableWall"); }
+	}
+	
 	#endregion
 	
 	void Awake()
@@ -145,6 +154,7 @@ public class PlayerMovementController : MonoBehaviour
 		_movementState.AddState( "ClimbingLedge", LedgeClimbUpdate );
 		_movementState.AddState( "ClimbingDownLedge", LedgeClimbDownUpdate );
 		_movementState.AddState( "OnWall", OnWallUpdate );
+		_movementState.AddState( "OnClimbableWall", OnClimbableWallUpdate );
 		_movementState.SetState( "OnGround" );
 		
 		_senses = GetComponent<MovementSenses>();
@@ -203,9 +213,13 @@ public class PlayerMovementController : MonoBehaviour
 		//Debug.Log(_inAirTimer.GetTimeRemaining());
 		
 		_rigidbody.velocity = _moveVel;		
+		
+		
+		
 		_lastPosition = _transform.position;
 		
-		_onWall = false;
+		_onWall = _senses.isWallAtHandHeight || _senses.isWallAboveHandHeight || _senses.isWallAtCrotchHeight;
+		_onWallNormal = _senses.wallNormal;
 	}
 	
 	void NothingUpdate( float timeDelta )
@@ -257,7 +271,14 @@ public class PlayerMovementController : MonoBehaviour
 		{
 			if ( _onWall && _senses.isWallAtHandHeight )
 			{
-				_movementState.SetState("OnWall");
+				if ( _senses.wallTypeAtHand == WallType.Normal )
+				{
+					_movementState.SetState("OnWall");
+				}
+				else
+				{
+					_movementState.SetState("OnClimbableWall");
+				}
 			}
 			else
 			{
@@ -285,6 +306,12 @@ public class PlayerMovementController : MonoBehaviour
 			_jumpPressed = false;
 			_jumpWhenPossible = false;
 		}		
+		
+		// player pressing up while against climbable wall
+		if ( _inputVector.y > 0 && _onWall && _senses.isWallAtHandHeight && _senses.wallTypeAtHand == WallType.Climbable )
+		{
+			_movementState.SetState("OnClimbableWall");
+		}
 		
 		//Debug.DrawLine(_transform.position, _transform.position + _groundNormal, Color.white );
 		
@@ -435,7 +462,14 @@ public class PlayerMovementController : MonoBehaviour
 		} 
 		else if ( _onWall && _senses.isWallAtHandHeight && _senses.isWallAtCrotchHeight )
 		{
-			_movementState.SetState( "OnWall");
+			if ( _senses.wallTypeAtHand == WallType.Normal )
+			{
+				_movementState.SetState("OnWall");
+			}
+			else
+			{
+				_movementState.SetState("OnClimbableWall");
+			}
 		}
 		
 		CheckForPossibleJump();
@@ -447,7 +481,9 @@ public class PlayerMovementController : MonoBehaviour
 		{
 			_ableToWallJump = true;
 		}
-			
+		
+		_readyForDoubleJump = false;
+		_moveVel.x = 0;
 		
 		// if pulling away from the wall
 		if ( _inputVector.x * _onWallNormal.x > 0 )
@@ -477,21 +513,7 @@ public class PlayerMovementController : MonoBehaviour
 		// if the player pressed the jump button while attached to wall
 		if ( _ableToWallJump && _jumpPressed )
 		{
-			_inputVector.x = _onWallNormal.x;
-			
-			UpdateDirection();
-			
-			_moveVel.x = Mathf.Lerp(0,_direction.x * _runSpeed, Mathf.Abs(_inputVector.x));
-			_moveVel.y = _jumpSpeed;// Mathf.Lerp(0, _jumpSpeed, yVal);
-			
-			_movementState.SetState( "InAir");
-			_ableToWallJump = false;
-			
-			_inputDelayTimer.Reset();
-			_delayInput = true;
-			
-			_readyForDoubleJump = true;
-			
+			DoWallJump();			
 			return;
 		}
 		
@@ -507,6 +529,10 @@ public class PlayerMovementController : MonoBehaviour
 		}		
 		
 		_inAirTimer.Update(timeDelta);
+		
+		Vector3 pos = _transform.position;
+		pos.x = _senses.wallIntersectPoint.x + _onWallNormal.x * _bounds.extents.x;
+		_transform.position = pos;
 		
 		if ( onGround )
 		{
@@ -527,6 +553,95 @@ public class PlayerMovementController : MonoBehaviour
 		}
 		
 		CheckForPossibleJump();
+	}
+	
+	void OnClimbableWallUpdate( float timeDelta )
+	{
+		if ( !_jumpPressed )
+		{
+			_ableToWallJump = true;
+		}
+		
+		_readyForDoubleJump = false;
+		
+		_moveVel.x = 0;
+		
+		if ( _inputVector.y >= 0 )
+		{
+			_moveVel.y = _inputVector.y * _wallClimbSpeed;
+		}
+		else
+		{
+			_moveVel.y += (-_gravity * timeDelta);
+		}
+		
+		// Make sure the player doesn't fall too fast
+		_moveVel.y = Mathf.Clamp(_moveVel.y, -_wallClimbSlideSpeed, 16 );
+		
+		// Snap player to wall
+		Vector3 pos = _transform.position;
+		pos.x = _senses.wallIntersectPoint.x + _onWallNormal.x * _bounds.extents.x;
+		_transform.position = pos;
+		
+		// if the player pressed the jump button while attached to wall
+		if ( _ableToWallJump && _jumpPressed )
+		{
+			DoWallJump();
+			return;
+		}
+		
+		// if pulling away from the wall
+		if ( _inputVector.x * _onWallNormal.x > 0 )
+		{
+			if ( _letGoOfWallTimer.Update( timeDelta ) )
+			{
+				UpdateDirection();
+				_movementState.SetState("InAir");
+				_ableToWallJump = false;
+				_readyForDoubleJump = false;
+				return;
+			}
+		}
+		else
+		{
+			_letGoOfWallTimer.Reset();
+		}
+		
+		if ( DoLedgeGrabCheck() )
+		{
+			_ableToWallJump = false;
+		}	
+		
+		if ( onGround )
+		{
+			_movementState.SetState( "OnGround" );
+			_ableToWallJump = false;
+		} 
+		else if ( _direction.x * _onWallNormal.x > 0 || !_onWall || !_senses.isWallAtCrotchHeight )
+		{
+			// player is facing away from wall
+			_movementState.SetState("InAir" );
+			_ableToWallJump = false;
+			_readyForDoubleJump = false;
+		}
+	}
+	
+	void DoWallJump()
+	{
+		_inputVector.x = _onWallNormal.x;
+			
+		UpdateDirection();
+		
+		_moveVel.x = Mathf.Lerp(0,_direction.x * _runSpeed, Mathf.Abs(_inputVector.x));
+		_moveVel.y = _jumpSpeed;// Mathf.Lerp(0, _jumpSpeed, yVal);
+		
+		_movementState.SetState( "InAir");
+		_ableToWallJump = false;
+		
+		_inputDelayTimer.Reset();
+		_delayInput = true;
+		
+		_readyForDoubleJump = true;
 	}
 	
 	bool DoLedgeGrabCheck()
@@ -578,7 +693,15 @@ public class PlayerMovementController : MonoBehaviour
 		_moveVel.y = 0;
 		_moveVel.x = 0;
 		
-		if ( _jumpPressed )
+		// if the player is pressing up hard enough, climb the ledge
+		if ( _inputVector.y >= 0.5f )
+		{
+			_targetPosition = _transform.position;
+			_targetPosition.x += _direction.x * 1;
+			_targetPosition.y += 2;
+			_movementState.SetState("ClimbingLedge");
+		}
+		else if ( _jumpPressed )
 		{
 			// if pulling away from ledge
 			if ( ((_inputVector.x * _direction.x) < 0)  || (_inputVector.y < 0) )
@@ -606,8 +729,7 @@ public class PlayerMovementController : MonoBehaviour
 				_targetPosition.x += _direction.x * 1;
 				_targetPosition.y += 2;
 				_movementState.SetState("ClimbingLedge");
-			}	
-			
+			}
 		}
 		else
 		{

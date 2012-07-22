@@ -1,6 +1,13 @@
 using UnityEngine;
 using System.Collections;
 
+public enum WallType
+{
+	Normal,
+	Climbable
+}
+
+
 public class MovementSenses : MonoBehaviour 
 {
 	[System.Serializable]
@@ -64,8 +71,11 @@ public class MovementSenses : MonoBehaviour
 	int _groundLayerMask = 0;
 	
 	bool _wallAboveHandHeight = false;
+	WallType _wallTypeAboveHand = WallType.Normal;
 	bool _wallAtHandHeight = false;
+	WallType _wallTypeAtHand = WallType.Normal;
 	bool _wallAtCrotchHeight = false;
+	WallType _wallTypeAtCrotch = WallType.Normal;
 	
 	Vector3 _direction = Vector3.right;
 	
@@ -79,11 +89,29 @@ public class MovementSenses : MonoBehaviour
 	float _groundCheckDistance = 0;
 	
 	Vector3 _groundLedgePosition = Vector3.zero;
+	Vector3 _wallNormal = Vector3.zero;
+	Vector3 _wallIntersectPoint = Vector3.zero;
+	
 #region Accessors
 	
 	public bool isWallAtHandHeight
 	{
 		get { return _wallAtHandHeight; }
+	}
+	
+	public WallType wallTypeAtHand
+	{
+		get { return _wallTypeAtHand; }
+	}
+	
+	public Vector3 wallNormal
+	{
+		get { return _wallNormal; }
+	}
+	
+	public Vector3 wallIntersectPoint
+	{
+		get { return _wallIntersectPoint; }
 	}
 	
 	public bool isWallAboveHandHeight
@@ -286,6 +314,17 @@ public class MovementSenses : MonoBehaviour
 		if ( Physics.Raycast( handRay, out info, _ledgeGrabDistance, _groundLayerMask ) )
 		{
 			_wallAtHandHeight = true;
+			if ( info.transform.tag == "ClimbableWall" )
+			{
+				_wallTypeAtHand = WallType.Climbable;
+			}
+			else
+			{
+				_wallTypeAtHand = WallType.Normal;
+			}
+			
+			_wallNormal = info.normal;
+			_wallIntersectPoint = info.point;
 			
 			offset = offsets.aboveHandOffset;
 			offset.x *= _direction.x;
