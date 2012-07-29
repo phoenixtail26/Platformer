@@ -300,11 +300,11 @@ public class PlayerMovementController : MonoBehaviour
 				_jumpWhenPossible = false;
 				
 				//Debug.LogError("stop");
+				_jumpPressed = false;
+				_jumpWhenPossible = false;
+
 				return;
 			}
-			
-			_jumpPressed = false;
-			_jumpWhenPossible = false;
 		}		
 		
 		// player pressing up while against climbable wall

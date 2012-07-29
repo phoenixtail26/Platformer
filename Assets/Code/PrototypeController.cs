@@ -10,7 +10,12 @@ public class PrototypeController : MonoBehaviour
 	// Use this for initialization
 	void Start () 
 	{
+		TastyInput i = TastyInput.instance;
+		i.BindAxes( "Move", JoystickAxes.LeftAnalogStick );
+		i.BindAxesKeys( "Move", KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.DownArrow, KeyCode.UpArrow );
 		
+		i.BindKey( "Jump", KeyCode.Z );
+		i.BindButton( "Jump", JoystickButtons.A_Cross );
 	}
 	
 
@@ -18,62 +23,21 @@ public class PrototypeController : MonoBehaviour
 	// Update is called once per frame
 	void Update () 
 	{
-		Vector2 inputVec = Vector2.zero;
-	
-		//DebugOuputKeyCodePressed();
-			
-		
-		
-		
 		TastyInput i = TastyInput.instance;
+		Vector2 inputVec = Vector2.zero;
 		
-		//OutputJoystickAxisUsed();
-		//Debug.Log(Input.GetAxis("Horizontal"));
-		
-		
-		inputVec = i.GetAxes(JoystickAxes.LeftAnalogStick);
-		
-		if ( Input.GetKey(KeyCode.LeftArrow) )
-		{
-			inputVec.x = -1;
-		}
-		
-		if ( Input.GetKey(KeyCode.RightArrow) )
-		{
-			inputVec.x = 1;
-		}
-		
-		if ( Input.GetKey(KeyCode.UpArrow) )
-		{
-			inputVec.y = 1;
-		}
-
-		if ( Input.GetKey(KeyCode.DownArrow) )
-		{
-			inputVec.y = -1;
-		}
-		
+		inputVec = i.GetAxes( "Move" );
+				
 		player.Move( inputVec );
 		
-		if ( i.GetButtonDown(JoystickButtons.A_Cross) )
+		if ( i.GetButtonDown( "Jump" ) )
 		{
 			player.StartJump();
 		}
 		
-		if ( i.GetButtonUp(JoystickButtons.A_Cross) )
+		if ( i.GetButtonUp( "Jump" ) )
 		{
 			player.EndJump();
 		}
-		
-		if ( Input.GetKeyDown(KeyCode.Z) )
-		{
-			player.StartJump();
-		}
-
-		if ( Input.GetKeyUp(KeyCode.Z) )
-		{
-			player.EndJump();
-		}
-
 	}
 }

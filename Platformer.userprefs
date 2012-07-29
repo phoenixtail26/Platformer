@@ -1,16 +1,28 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Code/TastyInput.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Code/TastyJoystick.cs">
     <Files>
       <File FileName="Assets/Code/PlatformerCamera.cs" Line="1" Column="1" />
       <File FileName="Assets/External Plugins/TastyFramework/Time/GameTimer.cs" Line="1" Column="1" />
-      <File FileName="Assets/Code/PrototypeController.cs" Line="1" Column="1" />
-      <File FileName="Assets/Code/TastyInput.cs" Line="124" Column="34" />
-      <File FileName="Assets/Code/PlayerMovementController.cs" Line="1" Column="1" />
+      <File FileName="Assets/Code/PrototypeController.cs" Line="32" Column="21" />
+      <File FileName="Assets/Code/TastyInput.cs" Line="7" Column="102" />
+      <File FileName="Assets/Code/TastyJoystick.cs" Line="51" Column="3" />
+      <File FileName="Assets/Code/PlayerMovementController.cs" Line="308" Column="4" />
       <File FileName="Assets/Code/MovementSenses.cs" Line="1" Column="1" />
       <File FileName="Assets/Code/Editor/MovementSensesInspector.cs" Line="1" Column="1" />
     </Files>
     <Pads>
+      <Pad Id="ProjectPad">
+        <State expanded="True">
+          <Node name="Assembly-CSharp" expanded="True">
+            <Node name="Assets" expanded="True">
+              <Node name="Code" expanded="True">
+                <Node name="TastyJoystick.cs" selected="True" />
+              </Node>
+            </Node>
+          </Node>
+        </State>
+      </Pad>
       <Pad Id="MonoDevelop.Debugger.WatchPad">
         <State>
           <Value>_center</Value>
