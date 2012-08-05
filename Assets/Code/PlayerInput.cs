@@ -52,5 +52,7 @@ public class PlayerInput : MonoBehaviour
 		{
 			player.Duck();
 		}
+		
+		player.DuckHeld( i.GetButton( "Duck" ) );
 	}
 }

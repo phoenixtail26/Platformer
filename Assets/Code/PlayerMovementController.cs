@@ -18,6 +18,11 @@ public class PlayerMovementController : MovementController
 	[SerializeField]
 	float _doubleJumpFactor = 0.75f;
 	
+	[SerializeField]
+	float _duckColliderHeight = 1;
+	[SerializeField]
+	float _duckMovementFactor = 0.5f;
+	
 	Vector3 _targetPosition = Vector3.zero;
 	
 	// OnWall variables
@@ -31,7 +36,10 @@ public class PlayerMovementController : MovementController
 	
 	bool _readyForDoubleJump = false;
 	bool _duckPressed = false;
-		
+	bool _duckHeld = false;	
+	
+	float _startColliderHeight = 2;
+	
 	#region Accessors
 	public bool inLedgeGrab
 	{
@@ -47,17 +55,25 @@ public class PlayerMovementController : MovementController
 	{
 		get { return (_movementState.currentState == "OnClimbableWall"); }
 	}
+	
+	public bool isCrouching
+	{
+		get { return (_movementState.currentState == "Crouching"); }
+	}
 	#endregion
 	
 	public override void Awake()
 	{
 		base.Awake();
 		
+		_startColliderHeight = _bounds.extents.y;
+		
 		_movementState.AddState( "LedgeGrab", LedgeGrabUpdate );
 		_movementState.AddState( "ClimbingLedge", LedgeClimbUpdate );
 		_movementState.AddState( "ClimbingDownLedge", LedgeClimbDownUpdate );
 		_movementState.AddState( "OnWall", OnWallUpdate );
 		_movementState.AddState( "OnClimbableWall", OnClimbableWallUpdate );
+		_movementState.AddState( "Crouching", CrouchingUpdate );
 	}
 
 	
@@ -85,8 +101,6 @@ public class PlayerMovementController : MovementController
 		
 		_duckPressed = false;
 	}
-	
-	
 	
 	protected override void OnGroundUpdate( float timeDelta )
 	{
@@ -130,7 +144,12 @@ public class PlayerMovementController : MovementController
 
 				return;
 			}
-		}		
+		}	
+		
+		if ( _duckHeld )
+		{
+			_movementState.SetState( "Crouching" );
+		}
 		
 		// player pressing up while against climbable wall
 		if ( _inputVector.y > 0 && _onWall && _senses.isWallAtHandHeight && _senses.wallTypeAtHand == WallType.Climbable )
@@ -196,7 +215,65 @@ public class PlayerMovementController : MovementController
 		return false;
 	}
 	
-
+	void CrouchingUpdate( float timeDelta )
+	{
+		BoxCollider col = _collider as BoxCollider;
+		Vector3 extents = col.extents;	
+		Vector3 center = col.center;
+		
+		extents.y = _duckColliderHeight * 0.5f;
+		
+		
+		UpdateDirection();
+		
+		_senses.UpdateFloorChecks( _bounds.extents.x * 2 );
+		
+		// Apply running acceleration
+		float accelVal = _runAccel * _duckMovementFactor;
+		
+		// if moving in opposite direction to input
+		if ( (_inputVector.x * _moveVel.x) < 0 )
+		{
+			accelVal = _runDirChangeDecel;
+		}
+		
+		_moveVel.x += (_inputVector.x * accelVal) * timeDelta;
+		_moveVel.x = Mathf.Clamp(_moveVel.x,-_runSpeed * _duckMovementFactor, _runSpeed * _duckMovementFactor);
+		
+		DecelIfNoInput( timeDelta );
+		
+		// Apply gravity
+		_moveVel += -_senses.groundNormal * (_gravity * timeDelta);
+		
+		// Check that one foot is on the ground
+		if ( !IsOneFootOnTheGround() )
+		{
+			_onGroundTimer.Reset();
+		}
+		
+		_inAirTimer.Reset();
+		
+		//Debug.Log(_senses.distanceToCeiling + "," + _startColliderHeight);
+		
+		if ( !onGround )
+		{
+			_movementState.SetState("InAir");
+		}		
+		else if ( !_duckHeld && (_senses.distanceToCeiling > (_startColliderHeight * 2)) )
+		{
+			_movementState.SetState("OnGround");
+		}
+		
+		if ( _movementState.currentState != "Crouching" )
+		{
+			extents.y = _startColliderHeight;
+		}
+		
+		center.y = extents.y;
+		col.extents = extents;
+		col.center = center;
+		_bounds = col.bounds;
+	}
 	
 	protected override void InAirUpdate( float timeDelta )
 	{
@@ -423,30 +500,12 @@ public class PlayerMovementController : MovementController
 		_moveVel.y = 0;
 		_moveVel.x = 0;
 		
-		// if the player is pressing up hard enough, climb the ledge
-		if ( _inputVector.y >= 0.5f )
-		{
-			_targetPosition = _transform.position;
-			_targetPosition.x += _direction.x * 1;
-			_targetPosition.y += 2;
-			_movementState.SetState("ClimbingLedge");
-		}
-		else if ( _jumpPressed )
+		if ( _jumpPressed )
 		{
 			// if pulling away from ledge
-			if ( ((_inputVector.x * _direction.x) < 0)  || (_inputVector.y < 0) )
+			if ( ((_inputVector.x * _direction.x) < 0)  /*|| (_inputVector.y < 0)*/ )
 			{
-				// jump away from ledge
-				UpdateDirection();
-				
-				float yVal = (_inputVector.y + 1) / 2.0f;
-				
-				_moveVel.x = Mathf.Lerp(0,_direction.x * _runSpeed, Mathf.Abs(_inputVector.x));
-				_moveVel.y = Mathf.Lerp(0, _jumpSpeed, yVal);
-				
-				_movementState.SetState( "InAir");
-				
-				_readyForDoubleJump = true;
+				DoWallJump();
 			}
 			// if pulling down
 			else if ( _inputVector.y < 0 )
@@ -460,6 +519,10 @@ public class PlayerMovementController : MovementController
 				_targetPosition.y += 2;
 				_movementState.SetState("ClimbingLedge");
 			}
+		}
+		else if ( _duckPressed )
+		{
+			_movementState.SetState( "InAir");
 		}
 		else
 		{
@@ -539,6 +602,11 @@ public class PlayerMovementController : MovementController
 	public void Duck()
 	{
 		_duckPressed = true;
+	}
+	
+	public void DuckHeld( bool val )
+	{
+		_duckHeld = val;
 	}
 	
 	public override void Move( Vector2 inputVec )

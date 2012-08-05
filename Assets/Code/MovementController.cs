@@ -313,7 +313,7 @@ public class MovementController : MonoBehaviour
 		_rigidbody.velocity = _moveVel;
 	}
 	
-	bool IsOneFootOnTheGround()
+	protected bool IsOneFootOnTheGround()
 	{
 		if ( _senses.minFootDistanceToGround < 0.3f )
 		{

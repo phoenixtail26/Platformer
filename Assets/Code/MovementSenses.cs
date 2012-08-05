@@ -92,6 +92,8 @@ public class MovementSenses : MonoBehaviour
 	Vector3 _wallNormal = Vector3.zero;
 	Vector3 _wallIntersectPoint = Vector3.zero;
 	
+	float _closestCeiling = 0;
+	
 #region Accessors
 	
 	public bool isWallAtHandHeight
@@ -157,6 +159,10 @@ public class MovementSenses : MonoBehaviour
 		get { return _groundInFrontOfRightFoot; }
 	}
 	
+	public float distanceToCeiling
+	{
+		get { return _closestCeiling; }
+	}
 #endregion
 	
 	void Start()
@@ -192,6 +198,18 @@ public class MovementSenses : MonoBehaviour
 		_direction = facingDirection;
 		UpdateFootDistanceToGround();
 		UpdateWallChecks();
+		UpdateCeilingCheck();
+	}
+	
+	void UpdateCeilingCheck()
+	{
+		Ray ray = new Ray( _transform.position, Vector3.up );
+		RaycastHit info;
+		_closestCeiling = Mathf.Infinity;
+		if ( Physics.Raycast( ray, out info, Mathf.Infinity, _groundLayerMask ) )
+		{
+			_closestCeiling = info.distance;
+		}
 	}
 	
 	public void UpdateFloorChecks( float playerWidth )
