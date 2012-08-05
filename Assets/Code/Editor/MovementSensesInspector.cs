@@ -10,7 +10,7 @@ public class MovementSensesInspector : Editor
 	void OnSceneGUI()
 	{
 		_senses = target as MovementSenses;
-		
+				
 		Transform t = _senses.transform;
 		
 		MovementSenses.SenseOffsets offsets = _senses.offsets;

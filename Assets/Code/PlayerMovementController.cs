@@ -3,111 +3,36 @@ using System.Collections;
 using Framework;
 
 [RequireComponent(typeof(MovementSenses))]
-public class PlayerMovementController : MonoBehaviour 
+public class PlayerMovementController : MovementController 
 {
-	[SerializeField]
-	float _runSpeed = 4;
-	[SerializeField]
-	float _runAccel = 10;
-	[SerializeField]
-	float _decel = 15;
-	[SerializeField]
-	float _runDirChangeDecel = 100;
-	[SerializeField]
-	float _jumpSpeed = 6;
-	[SerializeField]
-	float _shortJumpSpeed = 4;
-	[SerializeField]
-	float _airAccel = 20;
-	[SerializeField]
-	float _airDrag = 0.96875f;
 	[SerializeField]
 	float _wallClimbSpeed = 2;
 	[SerializeField]
 	float _wallClimbSlideSpeed = 4;
 	
 	[SerializeField]
-	float _gravity = -0.5f;
-		
-	Rigidbody _rigidbody;
-	Transform _transform;
-	Collider _collider;
-	Bounds _bounds;
+	float _wallSlideSpeed = 2;
+	[SerializeField]
+	float _wallRunGravityFactor = 0.75f;
 	
-	Vector3 _moveVel = new Vector3();
-	
-	bool _jumpPressed = false;
-	bool _runPressed = false;
-	bool _onGround = false;
-	
-	int _groundLayerMask = 0;
-	int _groundLayer = 0;
-	
-	GameTimer _onGroundTimer = new GameTimer(0.025f);
-	GameTimer _inAirTimer = new GameTimer(0.025f);
-	
-	Vector3 _leftFootOffset = Vector3.zero;
-	Vector3 _rightFootOffset = Vector3.zero;
-	
-	Vector3 _handOffset = Vector3.zero;
-	
-	Vector3 _lastPosition = Vector3.zero;
-	
-	Vector3 _direction = Vector3.right;
-	
-	FSM _movementState = new FSM();
-		
-	Vector2 _inputVector = Vector3.zero;
+	[SerializeField]
+	float _doubleJumpFactor = 0.75f;
 	
 	Vector3 _targetPosition = Vector3.zero;
-			
-	bool _jumpWhenPossible = false;
 	
 	// OnWall variables
 	bool _onWall = false;
 	Vector3 _onWallNormal = Vector3.zero;
 	GameTimer _letGoOfWallTimer = new GameTimer(0.2f);
 	bool _ableToWallJump = false;
-	[SerializeField]
-	float _wallSlideSpeed = 2;
-	[SerializeField]
-	float _wallRunGravityFactor = 0.75f;
 	
 	GameTimer _inputDelayTimer = new GameTimer(0.5f);
 	bool _delayInput = false;
-		
-	//bool _wallAtHandHeight = false;
 	
 	bool _readyForDoubleJump = false;
-	
-	[SerializeField]
-	float _doubleJumpFactor = 0.75f;
-	
-	[SerializeField]
-	MovementSenses _senses;
+	bool _duckPressed = false;
 		
 	#region Accessors
-	
-	public Vector3 moveVel
-	{
-		get { return _moveVel; }			
-	}
-	
-	public bool inAir
-	{
-		get { return _inAirTimer.hasFinished; }
-	}
-	
-	public bool onGround
-	{
-		get { return _onGroundTimer.hasFinished; }
-	}
-	
-	public Vector3 facingDirection
-	{
-		get { return _direction; }
-	}
-		
 	public bool inLedgeGrab
 	{
 		get { return (_movementState.currentState == "LedgeGrab"); }
@@ -122,79 +47,24 @@ public class PlayerMovementController : MonoBehaviour
 	{
 		get { return (_movementState.currentState == "OnClimbableWall"); }
 	}
-	
 	#endregion
 	
-	void Awake()
+	public override void Awake()
 	{
-		_groundLayer = LayerMask.NameToLayer("Ground");
-		_groundLayerMask = 1 << _groundLayer;
-		_transform = transform;
-		_rigidbody = rigidbody;
-		_collider = collider;
-		_bounds = _collider.bounds;
+		base.Awake();
 		
-		_leftFootOffset.x = -_bounds.extents.x + 0.1f;
-		_leftFootOffset.y = 0.05f;
-		
-		//Debug.DrawLine(_transform.position, _transform.position + _leftFootOffset, Color.white, 10000);
-		
-		_rightFootOffset.x = _bounds.extents.x - 0.1f;
-		_rightFootOffset.y = 0.05f;
-		
-		//Debug.DrawLine(_transform.position, _transform.position + _rightFootOffset, Color.white, 10000);
-		
-		_handOffset.x = _bounds.extents.x - 0.1f;
-		_handOffset.y = _bounds.extents.y * 2 - 0.05f;
-		
-		_movementState.AddState( "Nothing" , NothingUpdate );
-		_movementState.AddState( "OnGround", OnGroundUpdate );
-		_movementState.AddState( "InAir", InAirUpdate );
 		_movementState.AddState( "LedgeGrab", LedgeGrabUpdate );
 		_movementState.AddState( "ClimbingLedge", LedgeClimbUpdate );
 		_movementState.AddState( "ClimbingDownLedge", LedgeClimbDownUpdate );
 		_movementState.AddState( "OnWall", OnWallUpdate );
 		_movementState.AddState( "OnClimbableWall", OnClimbableWallUpdate );
-		_movementState.SetState( "OnGround" );
-		
-		_senses = GetComponent<MovementSenses>();
-		
-		_lastPosition = _transform.position;
 	}
-	
-	// Use this for initialization
-	void Start () 
-	{
-		_onGroundTimer.Reset();
-	}
+
 	
 	// Update is called once per frame
-	void FixedUpdate () 
+	public override void FixedUpdate () 
 	{
-		_moveVel = _rigidbody.velocity;
-		
-		/*if ( _moveVel.x != 0 )
-		{
-			_direction = _moveVel;
-			_direction.y = 0;
-			_direction.Normalize();
-		}*/
-		
-		//Debug.Log(_inputVector.x);
-		_senses.UpdateSenses(_direction);
-		
-		_movementState.Update(GameTime.deltaTime);
-				
-		// Determine if the player is on the ground
-		/*if ( _onGroundTimer.hasFinished )
-		{
-			_onGround = true;
-		}
-		else
-		{
-			_onGround = false;
-		}*/
-		
+		base.FixedUpdate();
 		
 		if ( _delayInput )
 		{
@@ -210,63 +80,17 @@ public class PlayerMovementController : MonoBehaviour
 			_inputVector.x = 0;
 		}
 		
-		//Debug.Log(_inAirTimer.GetTimeRemaining());
-		
-		_rigidbody.velocity = _moveVel;		
-		
-		
-		
-		_lastPosition = _transform.position;
-		
 		_onWall = _senses.isWallAtHandHeight || _senses.isWallAboveHandHeight || _senses.isWallAtCrotchHeight;
 		_onWallNormal = _senses.wallNormal;
+		
+		_duckPressed = false;
 	}
 	
-	void NothingUpdate( float timeDelta )
-	{
-		_moveVel = Vector3.zero;
-	}
 	
-	void OnGroundUpdate( float timeDelta )
+	
+	protected override void OnGroundUpdate( float timeDelta )
 	{
-		//Debug.Log(_inputVector.x);
-		UpdateDirection();
-		
-		_senses.UpdateFloorChecks( _bounds.extents.x * 2 );
-		
-		// Apply running acceleration
-		float accelVal = _runAccel;
-		
-		// if moving in opposite direction to input
-		if ( (_inputVector.x * _moveVel.x) < 0 )
-		{
-			accelVal = _runDirChangeDecel;
-		}
-		
-	/*	Vector3 forwardDir = new Vector3(-_groundNormal.y, _groundNormal.x, 0);
-		forwardDir *= -_direction.x;
-		Debug.DrawLine(_transform.position, _transform.position + forwardDir, Color.cyan);*/
-		
-		_moveVel.x += (_inputVector.x * accelVal) * timeDelta;
-		//_moveVel += forwardDir * (_inputVector.x * accelVal) * timeDelta;
-		_moveVel.x = Mathf.Clamp(_moveVel.x,-_runSpeed, _runSpeed);
-		
-		
-		
-		//Debug.Log(_inputVector.x);
-		
-		DecelIfNoInput( timeDelta );
-		
-		//Debug.Log(_moveVel.x);
-		
-		// Apply gravity
-		_moveVel += -_senses.groundNormal * (_gravity * timeDelta);
-		
-		// Check that one foot is on the ground
-		if ( !IsOneFootOnTheGround() )
-		{
-			_onGroundTimer.Reset();
-		}
+		base.OnGroundUpdate(timeDelta);
 		
 		if ( !onGround )
 		{
@@ -288,7 +112,7 @@ public class PlayerMovementController : MonoBehaviour
 		}
 		
 		// Look for climb down
-		if ( _jumpWhenPossible && _inputVector.y < 0 )
+		if ( _duckPressed )
 		{
 			if ( CheckForClimbDown() )
 			{
@@ -313,11 +137,6 @@ public class PlayerMovementController : MonoBehaviour
 		{
 			_movementState.SetState("OnClimbableWall");
 		}
-		
-		//Debug.DrawLine(_transform.position, _transform.position + _groundNormal, Color.white );
-		
-		_inAirTimer.Reset();
-		CheckForPossibleJump();
 	}
 	
 	bool CheckForClimbDown()
@@ -377,91 +196,15 @@ public class PlayerMovementController : MonoBehaviour
 		return false;
 	}
 	
-	void UpdateDirection()
-	{
-		if ( Mathf.Abs(_inputVector.x) > 0.05f )
-		{
-			_direction.x = _inputVector.x;
-			_direction.y = 0;
-			_direction.Normalize();
-		}
-	}
+
 	
-	void DecelIfNoInput( float timeDelta )
+	protected override void InAirUpdate( float timeDelta )
 	{
-		// if not running, then start to decelerate
-		if ( _inputVector.x == 0 )
-		{
-			float accelVal = _decel;
-			
-			if ( Mathf.Abs(_moveVel.x) > accelVal * timeDelta )
-			{
-				if ( _moveVel.x > 0 )
-				{
-					accelVal *= -1;
-				}
-				_moveVel.x += accelVal * timeDelta;
-			}
-			else
-			{
-				_moveVel.x = 0;
-			}
-		}
-	}
-	
-	void InAirUpdate( float timeDelta )
-	{
-		UpdateDirection();
-		
-		float accelVal = _airAccel;
-		_moveVel.x += (_inputVector.x * accelVal) * GameTime.deltaTime;
-		_moveVel.x = Mathf.Clamp(_moveVel.x,-_runSpeed, _runSpeed);
-		
-		Color debugColor = Color.red;
-		
-		// Apply air drag
-		if ( _moveVel.y < _shortJumpSpeed && _moveVel.y > 0 )
-		{
-			if ( Mathf.Abs(_moveVel.x) > 0.125f )
-			{
-				debugColor = Color.green;
-				_moveVel.x *= _airDrag;
-			}
-		}
-		
-		DecelIfNoInput( timeDelta );
-		
-		// Apply gravity
-		_moveVel.y += -_gravity * GameTime.deltaTime;
-		
-		// Make sure the player doesn't fall too fast
-		_moveVel.y = Mathf.Clamp(_moveVel.y, -16, 16 );
-		
-		/*if ( _moveVel.y > 0 && minFootDistanceToGround > 0.4f && _onWall )
-		{
-			_moveVel.y = 0;
-		}*/
-		
-		
-		if ( !onGround )
-		{
-			Debug.DrawLine(_lastPosition, _transform.position, debugColor, 10000);
-		}
+		base.InAirUpdate(timeDelta);
 		
 		DoLedgeGrabCheck();
 		
-		_inAirTimer.Update(timeDelta);
-		
-		if ( onGround )
-		{
-			// if the player isn't trying to move when landing, decelerate quickly to help them stick landings easier
-			if ( _inputVector.x == 0 )
-			{
-				_moveVel.x *= 0.5f;
-			}
-			_movementState.SetState( "OnGround" );
-		} 
-		else if ( _onWall && _senses.isWallAtHandHeight && _senses.isWallAtCrotchHeight )
+		if ( !onGround && _onWall && _senses.isWallAtHandHeight && _senses.isWallAtCrotchHeight )
 		{
 			if ( _senses.wallTypeAtHand == WallType.Normal )
 			{
@@ -472,8 +215,6 @@ public class PlayerMovementController : MonoBehaviour
 				_movementState.SetState("OnClimbableWall");
 			}
 		}
-		
-		CheckForPossibleJump();
 	}
 	
 	void OnWallUpdate( float timeDelta )
@@ -676,19 +417,7 @@ public class PlayerMovementController : MonoBehaviour
 		
 		return false;
 	}
-	
-	void CheckForPossibleJump()
-	{
-		if ( onGround || IsOneFootOnTheGround() )
-		{
-			if ( _jumpWhenPossible )
-			{
-				_jumpWhenPossible = false;
-				ExecuteJump();
-			}
-		}
-	}
-	
+		
 	void LedgeGrabUpdate( float timeDelta )
 	{
 		_moveVel.y = 0;
@@ -807,97 +536,45 @@ public class PlayerMovementController : MonoBehaviour
 		return false;
 	}
 	
-	public void Move( Vector2 inputVec )
+	public void Duck()
+	{
+		_duckPressed = true;
+	}
+	
+	public override void Move( Vector2 inputVec )
 	{
 		if ( !_delayInput )
 		{
-			_inputVector = inputVec;
-			
-			if ( _inputVector.x != 0 )
-			{
-				_runPressed = true;
-			}
+			base.Move(inputVec);
 		}
 	}
 	
-	public void Stop()
+	protected override void CheckForJump()
 	{
-		_rigidbody.velocity = Vector3.zero;
+		if ( inAir && _readyForDoubleJump )
+		{
+			ExecuteJump( _doubleJumpFactor );
+			_readyForDoubleJump = false;
+		}
+		else
+		{
+			base.CheckForJump();
+		}
 	}
 	
-	void ExecuteJump( float jumpFactor = 1 )
+	protected override void ExecuteJump( float jumpFactor = 1 )
 	{
-		_moveVel = _rigidbody.velocity;
-		_moveVel.y = _jumpSpeed * jumpFactor;
-		_rigidbody.velocity = _moveVel;
-		_onGroundTimer.Reset();
-		_inAirTimer.hasFinished = true;
+		base.ExecuteJump(jumpFactor);
 		
 		_readyForDoubleJump = true;
 	}
 	
-	public void StartJump()
+	public override void OnCollisionEnter( Collision other )
 	{
-		_jumpPressed = true;
+		base.OnCollisionEnter(other);
 		
-		if ( _movementState.currentState == "InAir" || _movementState.currentState == "OnGround" )
-		{
-			if ( inAir && _readyForDoubleJump )
-			{
-				ExecuteJump( _doubleJumpFactor );
-				_readyForDoubleJump = false;
-			}
-			else if ( !inAir )
-			{
-				_jumpWhenPossible = true;
-				//ExecuteJump();
-			}
-			else if ( onGround || IsOneFootOnTheGround() )
-			{
-				_jumpWhenPossible = true;
-				//ExecuteJump();
-			}
-			else if ( !onGround && _senses.minFootDistanceToGround < 0.75f )	// if close to ground, jump when on ground
-			{
-				_jumpWhenPossible = true;
-			}
-		}
-	}
-	
-	public void EndJump()
-	{
-		_jumpPressed = false;
-		_jumpWhenPossible = false;
-		
-		_moveVel = _rigidbody.velocity;
-		if ( _moveVel.y > _shortJumpSpeed )
-		{
-			_moveVel.y = _shortJumpSpeed;
-		}
-		_rigidbody.velocity = _moveVel;
-	}
-	
-	bool IsOneFootOnTheGround()
-	{
-		if ( _senses.minFootDistanceToGround < 0.3f )
-		{
-			return true;
-		}
-		
-		return false;
-		
-	}
-	
-	void OnCollisionEnter( Collision other )
-	{
 		if ( other.gameObject.layer == _groundLayer )
 		{
-			if ( IsOneFootOnTheGround() )
-			{
-				_onGroundTimer.Update(GameTime.deltaTime);
-				_inAirTimer.Reset();
-			}
-			
 			if ( Mathf.Approximately(Mathf.Abs(other.contacts[0].normal.x), 1 ) )
 			{
 				_onWall = true;	
@@ -906,21 +583,17 @@ public class PlayerMovementController : MonoBehaviour
 		}
 	}
 	
-	void OnCollisionStay( Collision other )
+	public virtual void OnCollisionStay( Collision other )
 	{
+		base.OnCollisionStay(other);
+		
 		if ( other.gameObject.layer == _groundLayer )
 		{
-			if ( IsOneFootOnTheGround() )
+			if ( Mathf.Approximately(Mathf.Abs(other.contacts[0].normal.x), 1 ) )
 			{
-				_onGroundTimer.Update(GameTime.deltaTime);
-				//_inAirTimer.Reset();
+				_onWall = true;	
+				_onWallNormal = other.contacts[0].normal;
 			}
-		}
-		
-		if ( Mathf.Approximately(Mathf.Abs(other.contacts[0].normal.x), 1 ) )
-		{
-			_onWall = true;	
-			_onWallNormal = other.contacts[0].normal;
 		}
 	}
 }

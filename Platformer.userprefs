@@ -1,16 +1,15 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Code/PrototypeController.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Code/PlayerMovementController.cs">
     <Files>
       <File FileName="Assets/Code/PlatformerCamera.cs" Line="1" Column="1" />
       <File FileName="Assets/External Plugins/TastyFramework/Time/GameTimer.cs" Line="1" Column="1" />
-      <File FileName="Assets/Code/PlayerMovementController.cs" Line="308" Column="4" />
-      <File FileName="Assets/Code/PlayerInput.cs" Line="23" Column="35" />
+      <File FileName="Assets/Code/PlayerMovementController.cs" Line="311" Column="5" />
+      <File FileName="Assets/Code/PlayerInput.cs" Line="53" Column="18" />
       <File FileName="Assets/Code/PrototypeController.cs" Line="18" Column="1" />
-      <File FileName="Assets/Code/TastyInput.cs" Line="16" Column="44" />
-      <File FileName="Assets/Code/TastyJoystick.cs" Line="51" Column="3" />
+      <File FileName="Assets/Code/TastyInput.cs" Line="1" Column="1" />
+      <File FileName="Assets/Code/TastyJoystick.cs" Line="1" Column="1" />
       <File FileName="Assets/Code/MovementSenses.cs" Line="1" Column="1" />
-      <File FileName="Assets/Code/Editor/MovementSensesInspector.cs" Line="1" Column="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
@@ -18,7 +17,14 @@
           <Node name="Assembly-CSharp" expanded="True">
             <Node name="Assets" expanded="True">
               <Node name="Code" expanded="True">
-                <Node name="PrototypeController.cs" selected="True" />
+                <Node name="PlayerMovementController.cs" selected="True" />
+              </Node>
+            </Node>
+          </Node>
+          <Node name="Assembly-CSharp-Editor" expanded="True">
+            <Node name="Assets" expanded="True">
+              <Node name="Code" expanded="True">
+                <Node name="Editor" expanded="True" />
               </Node>
             </Node>
           </Node>

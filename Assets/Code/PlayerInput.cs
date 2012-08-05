@@ -16,6 +16,9 @@ public class PlayerInput : MonoBehaviour
 		
 		i.BindKey( "Jump", KeyCode.Z );
 		i.BindButton( "Jump", JoystickButtons.A_Cross );
+		
+		i.BindKey( "Duck", KeyCode.X );
+		i.BindButton( "Duck", JoystickButtons.B_Circle );
 	}
 	
 	// Update is called once per frame
@@ -43,6 +46,11 @@ public class PlayerInput : MonoBehaviour
 		if ( i.GetButtonUp( "Jump" ) )
 		{
 			player.EndJump();
+		}
+		
+		if ( i.GetButtonDown( "Duck" ) )
+		{
+			player.Duck();
 		}
 	}
 }
