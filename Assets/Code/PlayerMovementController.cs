@@ -236,10 +236,12 @@ public class PlayerMovementController : MonoBehaviour
 		
 		// Apply running acceleration
 		float accelVal = _runAccel;
+		
 		// if moving in opposite direction to input
 		if ( (_inputVector.x * _moveVel.x) < 0 )
 		{
 			accelVal = _runDirChangeDecel;
+			Debug.Log(_inputVector.x);
 		}
 		
 	/*	Vector3 forwardDir = new Vector3(-_groundNormal.y, _groundNormal.x, 0);
@@ -378,7 +380,7 @@ public class PlayerMovementController : MonoBehaviour
 	
 	void UpdateDirection()
 	{
-		if ( _inputVector.x != 0 )
+		if ( Mathf.Abs(_inputVector.x) > 0.05f )
 		{
 			_direction.x = _inputVector.x;
 			_direction.y = 0;
@@ -797,67 +799,17 @@ public class PlayerMovementController : MonoBehaviour
 	
 	public bool CheckForLedgeGrab( ref Vector3 ledgePosition )
 	{
-		/*Vector3 offset = _handOffset;
-		
-		if ( _direction.x < 0 )
-		{
-			offset.x *= -1;
-		}
-		
-		Vector3 handPos = _transform.position + offset - Vector3.up * _ledgeGrabCheckHeight / 2.0f;
-		Debug.DrawLine( handPos, handPos + _direction, Color.magenta, 10);
-		
-		// if there's a wall at hand height
-		RaycastHit info;
-		if ( Physics.Raycast( handPos, _direction, out info, _ledgeGrabCheckDistance, _groundLayerMask ) )
-		{
-			_wallAtHandHeight = true;
-			
-			Vector3 aboveHandPos = _transform.position + offset + Vector3.up * _ledgeGrabCheckHeight / 2.0f;
-			Debug.DrawLine(aboveHandPos, aboveHandPos + _direction, Color.cyan, 10);
-			// if there's no wall just above the hand height
-			if ( !Physics.Raycast( aboveHandPos, _direction, _ledgeGrabCheckDistance, _groundLayerMask ) )
-			{
-				
-				Vector3 newPos = _transform.position;
-					
-				newPos.x = info.point.x;
-				Vector3 testPos = aboveHandPos;
-				testPos.x = newPos.x + _direction.x * 0.05f;
-				
-				if ( Physics.Raycast( testPos, Vector3.down, out info, _ledgeGrabCheckHeight, _groundLayerMask ) )
-				{
-					newPos.y = info.point.y;
-				}
-				else
-				{
-					Debug.LogWarning("Couldn't find Y position of ledge");
-				}
-				
-				ledgePosition = newPos;
-				
-				// then there's a ledge to grab
-				return true;
-			}
-		}
-		else
-		{
-			_wallAtHandHeight = false;
-		}*/
-		
 		if ( _senses.isWallAtHandHeight && !_senses.isWallAboveHandHeight )
 		{
 			ledgePosition = _senses.ledgePosition;
 			return true;
 		}
 		
-		
 		return false;
 	}
 	
 	public void Move( Vector2 inputVec )
 	{
-		
 		if ( !_delayInput )
 		{
 			_inputVector = inputVec;
