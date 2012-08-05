@@ -241,7 +241,6 @@ public class PlayerMovementController : MonoBehaviour
 		if ( (_inputVector.x * _moveVel.x) < 0 )
 		{
 			accelVal = _runDirChangeDecel;
-			Debug.Log(_inputVector.x);
 		}
 		
 	/*	Vector3 forwardDir = new Vector3(-_groundNormal.y, _groundNormal.x, 0);
@@ -813,6 +812,7 @@ public class PlayerMovementController : MonoBehaviour
 		if ( !_delayInput )
 		{
 			_inputVector = inputVec;
+			
 			if ( _inputVector.x != 0 )
 			{
 				_runPressed = true;

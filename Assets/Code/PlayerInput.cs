@@ -5,6 +5,8 @@ public class PlayerInput : MonoBehaviour
 {
 	public PlayerMovementController player;
 	
+	Vector2 _input = Vector2.zero;
+	
 	// Use this for initialization
 	void Start () 
 	{
@@ -20,11 +22,18 @@ public class PlayerInput : MonoBehaviour
 	void Update () 
 	{
 		TastyInput i = TastyInput.instance;
-		Vector2 inputVec = Vector2.zero;
 		
-		inputVec = i.GetAxes( "Move" );
-				
-		player.Move( inputVec );
+		Vector2 inputVec = i.GetAxes( "Move" );
+		
+		// Debounce analog stick
+		if ( inputVec.x * _input.x < 0 )
+		{
+			inputVec.x = 0;
+		}
+		
+		_input = inputVec;
+		
+		player.Move( _input );
 		
 		if ( i.GetButtonDown( "Jump" ) )
 		{
