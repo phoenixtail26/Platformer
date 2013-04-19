@@ -17,17 +17,19 @@ public class Gun : MonoBehaviour
 	
 	GenericPool<Bullet> _bulletPool;
 	
+	[SerializeField]
+	Transform _bulletStartPoint;
+	
 	void Awake()
 	{
 		_fireDelayTimer = new GameTimer(_fireDelay);
 		
-		GenericPool<Bullet>.CreatePool();
-		
+		_bulletPool = GenericPool<Bullet>.CreatePool(_bulletPrefab, 30);
 	}
 	
 	public void Draw( bool draw )
 	{
-		gameObject.SetActiveRecursively(draw);
+		gameObject.SetActive(draw);
 		
 		if ( draw )
 		{
@@ -57,7 +59,10 @@ public class Gun : MonoBehaviour
 			_gunAnimation.Stop();
 			_gunAnimation.Play("Gun Recoil");
 			_fireDelayTimer.Reset();
-			//Bullet bullet = GenericPool<Bullet>.instance.Instantiate( _bulletPrefab );
+			Bullet bullet = _bulletPool.GetItem();
+			bullet.pool = _bulletPool;
+			bullet.transform.position = _bulletStartPoint.position;
+			bullet.Shoot(transform.right);
 		}
 	}
 	

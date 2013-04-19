@@ -24,7 +24,7 @@ public class Player : MonoBehaviour
 	{
 		if ( _gunDrawn )
 		{
-			_moveCon.Move(vec * 0.5f);
+			_moveCon.Move(vec * _gunDrawnMovementFactor);
 		}
 		else
 		{

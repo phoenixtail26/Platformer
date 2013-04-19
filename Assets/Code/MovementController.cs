@@ -6,7 +6,7 @@ using Framework;
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(Collider))]
 public class MovementController : MonoBehaviour 
-{
+{	
 	[SerializeField]
 	protected float _runSpeed = 4;
 	[SerializeField]
