@@ -46,7 +46,7 @@ public class PlatformerCamera : MonoBehaviour
 	}
 	
 	// Update is called once per frame
-	void Update () 
+	void LateUpdate () 
 	{
 		Vector3 pos = _transform.position;
 		Vector3 playerPos = _playerTrans.position;

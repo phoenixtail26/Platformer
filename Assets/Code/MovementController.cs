@@ -44,7 +44,7 @@ public class MovementController : MonoBehaviour
 	protected int _groundLayer = 0;
 	
 	protected GameTimer _onGroundTimer = new GameTimer(0.025f);
-	protected GameTimer _inAirTimer = new GameTimer(0.025f);
+	protected GameTimer _inAirTimer = new GameTimer(0.05f);
 	
 	protected Vector3 _lastPosition = Vector3.zero;
 	
@@ -238,7 +238,7 @@ public class MovementController : MonoBehaviour
 	
 	protected void CheckForPossibleJump()
 	{
-		if ( onGround || IsOneFootOnTheGround() )
+		if ( onGround || IsOneFootOnTheGround() || !inAir )
 		{
 			if ( _jumpWhenPossible )
 			{

@@ -139,8 +139,8 @@ public class PlayerMovementController : MovementController
 				_jumpWhenPossible = false;
 				
 				//Debug.LogError("stop");
-				_jumpPressed = false;
-				_jumpWhenPossible = false;
+				//_jumpPressed = false;
+				//_jumpWhenPossible = false;
 
 				return;
 			}
@@ -616,7 +616,7 @@ public class PlayerMovementController : MovementController
 			base.Move(inputVec);
 		}
 	}
-	
+		
 	protected override void CheckForJump()
 	{
 		if ( inAir && _readyForDoubleJump )
@@ -651,7 +651,7 @@ public class PlayerMovementController : MovementController
 		}
 	}
 	
-	public virtual void OnCollisionStay( Collision other )
+	public override void OnCollisionStay( Collision other )
 	{
 		base.OnCollisionStay(other);
 		

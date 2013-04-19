@@ -3,7 +3,8 @@ using System.Collections;
 
 public class PlayerInput : MonoBehaviour 
 {
-	public PlayerMovementController player;
+	public Player player;
+	public PlayerMovementController playerMove;
 	
 	Vector2 _input = Vector2.zero;
 	
@@ -17,8 +18,12 @@ public class PlayerInput : MonoBehaviour
 		i.BindKey( "Jump", KeyCode.Z );
 		i.BindButton( "Jump", JoystickButtons.A_Cross );
 		
-		i.BindKey( "Duck", KeyCode.X );
+		i.BindKey( "Duck", KeyCode.C );
 		i.BindButton( "Duck", JoystickButtons.B_Circle );
+		
+		i.BindKey( "DrawGun", KeyCode.LeftShift );
+		
+		i.BindKey( "FireGun", KeyCode.X );
 	}
 	
 	// Update is called once per frame
@@ -40,19 +45,30 @@ public class PlayerInput : MonoBehaviour
 		
 		if ( i.GetButtonDown( "Jump" ) )
 		{
-			player.StartJump();
+			playerMove.StartJump();
 		}
 		
 		if ( i.GetButtonUp( "Jump" ) )
 		{
-			player.EndJump();
+			playerMove.EndJump();
 		}
 		
 		if ( i.GetButtonDown( "Duck" ) )
 		{
-			player.Duck();
+			playerMove.Duck();
 		}
 		
-		player.DuckHeld( i.GetButton( "Duck" ) );
+		playerMove.DuckHeld( i.GetButton( "Duck" ) );
+		
+		if ( i.GetButtonDown( "DrawGun" ) )
+		{
+			player.DrawGun();
+		}
+		
+		if ( i.GetButtonDown( "FireGun" ) )
+		{
+			player.FireGun();
+		}
+
 	}
 }
