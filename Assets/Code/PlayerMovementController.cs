@@ -23,6 +23,16 @@ public class PlayerMovementController : MovementController
 	[SerializeField]
 	float _duckMovementFactor = 0.5f;
 	
+	[SerializeField]
+	float _dashingSpeed = 10;
+	
+	[SerializeField]
+	float _dashingTime = 1;
+	
+	GameTimer _dashingTimer;
+	
+	bool _ableToDash = false;
+	
 	Vector3 _targetPosition = Vector3.zero;
 	
 	// OnWall variables
@@ -83,6 +93,8 @@ public class PlayerMovementController : MovementController
 		_movementState.AddState( "OnClimbableWall", OnClimbableWallUpdate );
 		_movementState.AddState( "Crouching", CrouchingUpdate );
 		_movementState.AddState( "Dashing", DashingUpdate );
+		
+		_dashingTimer = new GameTimer(_dashingTime);
 	}
 	
 	// Update is called once per frame
@@ -171,6 +183,8 @@ public class PlayerMovementController : MovementController
 		{
 			_movementState.SetState("OnClimbableWall");
 		}
+		
+		_ableToDash = true;
 	}
 	
 	bool CheckForClimbDown()
@@ -401,6 +415,8 @@ public class PlayerMovementController : MovementController
 		}
 		
 		CheckForPossibleJump();
+		
+		_ableToDash = true;
 	}
 	
 	void OnClimbableWallUpdate( float timeDelta )
@@ -472,6 +488,8 @@ public class PlayerMovementController : MovementController
 			_ableToWallJump = false;
 			_readyForDoubleJump = false;
 		}
+		
+		_ableToDash = true;
 	}
 	
 	void DoWallJump()
@@ -560,6 +578,7 @@ public class PlayerMovementController : MovementController
 			_transform.position = pos;
 		}
 		
+		_ableToDash = true;
 	}
 	
 	void LedgeClimbUpdate( float timeDelta )
@@ -622,7 +641,17 @@ public class PlayerMovementController : MovementController
 	
 	void DashingUpdate( float timeDelta )
 	{
+		if ( _dashingTimer.Update(timeDelta) )
+		{
+			_movementState.SetState("InAir");
+			return;
+		}
 		
+		
+		
+		_moveVel.y = 0;
+		
+		_moveVel.x = _direction.x * _dashingSpeed;
 	}
 	
 	public bool CheckForLedgeGrab( ref Vector3 ledgePosition )
@@ -648,7 +677,12 @@ public class PlayerMovementController : MovementController
 	
 	public void Dash()
 	{
-		Debug.Log("dash");
+		if ( _ableToDash && _movementState.currentState != "Dashing" )
+		{
+			_movementState.SetState("Dashing");
+			_dashingTimer.Reset();
+			_ableToDash = false;
+		}
 	}
 	
 	public override void Move( Vector2 inputVec )

@@ -1,17 +1,17 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Code/Bullet.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Code/Player.cs">
     <Files>
-      <File FileName="Assets/Code/MovementSenses.cs" Line="38" Column="56" />
-      <File FileName="Assets/Code/MovementController.cs" Line="186" Column="80" />
-      <File FileName="Assets/Code/PlayerInput.cs" Line="48" Column="18" />
-      <File FileName="Assets/Code/PlayerMovementController.cs" Line="371" Column="70" />
-      <File FileName="Assets/Code/Player.cs" Line="98" Column="3" />
+      <File FileName="Assets/Code/MovementSenses.cs" Line="1" Column="1" />
+      <File FileName="Assets/Code/MovementController.cs" Line="1" Column="1" />
+      <File FileName="Assets/Code/PlayerInput.cs" Line="1" Column="1" />
+      <File FileName="Assets/Code/Player.cs" Line="1" Column="1" />
+      <File FileName="Assets/Code/PlayerMovementController.cs" Line="581" Column="22" />
       <File FileName="Assets/Code/Gun.cs" Line="1" Column="1" />
-      <File FileName="Assets/Code/Bullet.cs" Line="44" Column="42" />
-      <File FileName="Assets/Code/Ground.cs" Line="15" Column="2" />
-      <File FileName="Assets/Code/Editor/GroundEditor.cs" Line="49" Column="3" />
-      <File FileName="Assets/Code/Pickup.cs" Line="20" Column="34" />
+      <File FileName="Assets/Code/Bullet.cs" Line="1" Column="1" />
+      <File FileName="Assets/Code/Ground.cs" Line="1" Column="1" />
+      <File FileName="Assets/Code/Editor/GroundEditor.cs" Line="1" Column="1" />
+      <File FileName="Assets/Code/Pickup.cs" Line="1" Column="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
@@ -19,7 +19,7 @@
           <Node name="Assembly-CSharp" expanded="True">
             <Node name="Assets" expanded="True">
               <Node name="Code" expanded="True">
-                <Node name="Bullet.cs" selected="True" />
+                <Node name="Player.cs" selected="True" />
               </Node>
               <Node name="External Plugins" expanded="True">
                 <Node name="TastyFramework" expanded="True">

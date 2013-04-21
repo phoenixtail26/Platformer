@@ -8,7 +8,8 @@ public class Pickup : MonoBehaviour
 		DoubleJump,
 		WallJump,
 		WallCling,
-		Gun
+		Gun,
+		Dash,
 	}
 	
 	public PickupType type;

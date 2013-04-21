@@ -25,7 +25,7 @@ public class PlayerInput : MonoBehaviour
 		
 		i.BindKey( "FireGun", KeyCode.Z );
 		
-		i.BindKey( "Dash", KeyCode.D );
+		i.BindKey( "Dash", KeyCode.V );
 	}
 	
 	// Update is called once per frame

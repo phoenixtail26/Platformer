@@ -123,6 +123,9 @@ public class Player : MonoBehaviour
 			_abilities.gunEnabled = true;
 			break;
 			
+		case Pickup.PickupType.Dash:
+			_abilities.dashEnabled = true;
+			break;
 		}
 		
 		pickup.Collect();
