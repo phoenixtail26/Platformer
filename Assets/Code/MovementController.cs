@@ -56,6 +56,8 @@ public class MovementController : MonoBehaviour
 	
 	protected MovementSenses _senses;
 	
+	protected float _maxVerticalSpeed = 16;
+	
 	#region Accessors
 	public Vector3 moveVel
 	{
@@ -181,7 +183,7 @@ public class MovementController : MonoBehaviour
 		_moveVel.y += -_gravity * GameTime.deltaTime;
 		
 		// Make sure the player doesn't fall too fast
-		_moveVel.y = Mathf.Clamp(_moveVel.y, -16, 16 );
+		_moveVel.y = Mathf.Clamp(_moveVel.y, -_maxVerticalSpeed, _maxVerticalSpeed );
 		
 		if ( !onGround )
 		{
@@ -304,6 +306,13 @@ public class MovementController : MonoBehaviour
 	{
 		_jumpPressed = false;
 		_jumpWhenPossible = false;
+		
+		if ( _movementState.currentState == "ClimbingLedge" )
+		{
+			_moveVel = Vector3.zero;
+			_rigidbody.velocity = Vector3.zero;
+			return;
+		}
 		
 		_moveVel = _rigidbody.velocity;
 		if ( _moveVel.y > _shortJumpSpeed )

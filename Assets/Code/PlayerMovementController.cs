@@ -40,6 +40,8 @@ public class PlayerMovementController : MovementController
 	
 	float _startColliderHeight = 2;
 	
+	Abilities _abilities = new Abilities();
+	
 	#region Accessors
 	public bool inLedgeGrab
 	{
@@ -60,6 +62,12 @@ public class PlayerMovementController : MovementController
 	{
 		get { return (_movementState.currentState == "Crouching"); }
 	}
+	
+	public Abilities playerAbilities
+	{
+		get { return _abilities; }
+		set { _abilities = value; }
+	}
 	#endregion
 	
 	public override void Awake()
@@ -74,14 +82,20 @@ public class PlayerMovementController : MovementController
 		_movementState.AddState( "OnWall", OnWallUpdate );
 		_movementState.AddState( "OnClimbableWall", OnClimbableWallUpdate );
 		_movementState.AddState( "Crouching", CrouchingUpdate );
+		_movementState.AddState( "Dashing", DashingUpdate );
 	}
-
 	
 	// Update is called once per frame
 	public override void FixedUpdate () 
 	{
 		base.FixedUpdate();
 		
+		_onWall = _senses.isWallAtHandHeight || _senses.isWallAboveHandHeight || _senses.isWallAtCrotchHeight;
+		_onWallNormal = _senses.wallNormal;
+	}
+	
+	void Update()
+	{
 		if ( _delayInput )
 		{
 			if ( _inputDelayTimer.Update(GameTime.deltaTime) || !inAir || onGround )
@@ -96,9 +110,6 @@ public class PlayerMovementController : MovementController
 			_inputVector.x = 0;
 		}
 		
-		_onWall = _senses.isWallAtHandHeight || _senses.isWallAboveHandHeight || _senses.isWallAtCrotchHeight;
-		_onWallNormal = _senses.wallNormal;
-		
 		_duckPressed = false;
 	}
 	
@@ -110,13 +121,17 @@ public class PlayerMovementController : MovementController
 		{
 			if ( _onWall && _senses.isWallAtHandHeight )
 			{
-				if ( _senses.wallTypeAtHand == WallType.Normal )
+				if ( _senses.wallTypeAtHand == WallType.Climbable && _abilities.wallClingEnabled )
+				{
+					_movementState.SetState("OnClimbableWall");
+				}
+				else if ( (_senses.wallTypeAtHand == WallType.Normal || _senses.wallTypeAtHand == WallType.Climbable) && _abilities.wallJumpEnabled )
 				{
 					_movementState.SetState("OnWall");
 				}
 				else
 				{
-					_movementState.SetState("OnClimbableWall");
+					_movementState.SetState("InAir");
 				}
 			}
 			else
@@ -152,7 +167,7 @@ public class PlayerMovementController : MovementController
 		}
 		
 		// player pressing up while against climbable wall
-		if ( _inputVector.y > 0 && _onWall && _senses.isWallAtHandHeight && _senses.wallTypeAtHand == WallType.Climbable )
+		if ( _inputVector.y > 0 && _onWall && _senses.isWallAtHandHeight && _senses.wallTypeAtHand == WallType.Climbable && _abilities.wallClingEnabled )
 		{
 			_movementState.SetState("OnClimbableWall");
 		}
@@ -283,13 +298,13 @@ public class PlayerMovementController : MovementController
 		
 		if ( !onGround && _onWall && _senses.isWallAtHandHeight && _senses.isWallAtCrotchHeight )
 		{
-			if ( _senses.wallTypeAtHand == WallType.Normal )
-			{
-				_movementState.SetState("OnWall");
-			}
-			else
+			if ( _senses.wallTypeAtHand == WallType.Climbable && _abilities.wallClingEnabled )
 			{
 				_movementState.SetState("OnClimbableWall");
+			}
+			else if ( (_senses.wallTypeAtHand == WallType.Normal || _senses.wallTypeAtHand == WallType.Climbable) && _abilities.wallJumpEnabled )
+			{
+				_movementState.SetState("OnWall");
 			}
 		}
 	}
@@ -336,11 +351,25 @@ public class PlayerMovementController : MovementController
 			return;
 		}
 		
+		
 		float grav = _gravity * _wallRunGravityFactor;
+		
+		/*if ( _inputVector.y < -0.1f )
+		{
+			grav = _gravity;
+		}*/
+		
 		_moveVel.y += (-grav * GameTime.deltaTime);
 		
-		// Make sure the player doesn't fall too fast
-		_moveVel.y = Mathf.Clamp(_moveVel.y, -_wallSlideSpeed, 16 );
+		// Make sure the player doesn't fall too fast		
+		float slideSpeed = _wallSlideSpeed;
+		if ( _inputVector.y < -0.1f )
+		{
+			Debug.Log("fall faster");
+			slideSpeed = _wallSlideSpeed * 4;
+		}
+		
+		_moveVel.y = Mathf.Clamp(_moveVel.y, -slideSpeed, _maxVerticalSpeed );
 				
 		if ( DoLedgeGrabCheck() )
 		{
@@ -516,7 +545,7 @@ public class PlayerMovementController : MovementController
 			{
 				_targetPosition = _transform.position;
 				_targetPosition.x += _direction.x * 1;
-				_targetPosition.y += 2;
+				_targetPosition.y += _collider.bounds.size.y;
 				_movementState.SetState("ClimbingLedge");
 			}
 		}
@@ -551,6 +580,8 @@ public class PlayerMovementController : MovementController
 		
 		_transform.position = pos;
 		
+		Debug.DrawLine(_transform.position, _targetPosition);
+		
 		if ( (_transform.position - _targetPosition).magnitude < 0.1f )
 		{	
 			// if the player is trying to run at the end of the climb, give them a velocity head start
@@ -558,6 +589,7 @@ public class PlayerMovementController : MovementController
 			{
 				_moveVel.x = _runSpeed * 0.5f * _direction.x;
 			}
+			
 			_transform.position = _targetPosition;
 			_movementState.SetState("OnGround");
 		}
@@ -588,6 +620,11 @@ public class PlayerMovementController : MovementController
 		}
 	}
 	
+	void DashingUpdate( float timeDelta )
+	{
+		
+	}
+	
 	public bool CheckForLedgeGrab( ref Vector3 ledgePosition )
 	{
 		if ( _senses.isWallAtHandHeight && !_senses.isWallAboveHandHeight )
@@ -609,6 +646,11 @@ public class PlayerMovementController : MovementController
 		_duckHeld = val;
 	}
 	
+	public void Dash()
+	{
+		Debug.Log("dash");
+	}
+	
 	public override void Move( Vector2 inputVec )
 	{
 		if ( !_delayInput )
@@ -619,7 +661,7 @@ public class PlayerMovementController : MovementController
 		
 	protected override void CheckForJump()
 	{
-		if ( inAir && _readyForDoubleJump )
+		if ( inAir && _readyForDoubleJump && _abilities.doubleJumpEnabled )
 		{
 			ExecuteJump( _doubleJumpFactor );
 			_readyForDoubleJump = false;
@@ -632,6 +674,11 @@ public class PlayerMovementController : MovementController
 	
 	protected override void ExecuteJump( float jumpFactor = 1 )
 	{
+		if ( _movementState.currentState == "ClimbingLedge" )
+		{
+			return;
+		}
+		
 		base.ExecuteJump(jumpFactor);
 		
 		_readyForDoubleJump = true;

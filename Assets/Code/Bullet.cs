@@ -43,6 +43,7 @@ public class Bullet : MonoBehaviour
 	
 	void OnCollisionEnter( Collision other )
 	{
+		other.gameObject.SendMessage("OnHitByBullet", SendMessageOptions.DontRequireReceiver);
 		Destroy();
 	}
 	

@@ -15,7 +15,7 @@ public class PlayerInput : MonoBehaviour
 		i.BindAxes( "Move", JoystickAxes.LeftAnalogStick );
 		i.BindAxesKeys( "Move", KeyCode.LeftArrow, KeyCode.RightArrow, KeyCode.DownArrow, KeyCode.UpArrow );
 		
-		i.BindKey( "Jump", KeyCode.Z );
+		i.BindKey( "Jump", KeyCode.X );
 		i.BindButton( "Jump", JoystickButtons.A_Cross );
 		
 		i.BindKey( "Duck", KeyCode.C );
@@ -23,7 +23,9 @@ public class PlayerInput : MonoBehaviour
 		
 		i.BindKey( "DrawGun", KeyCode.LeftShift );
 		
-		i.BindKey( "FireGun", KeyCode.X );
+		i.BindKey( "FireGun", KeyCode.Z );
+		
+		i.BindKey( "Dash", KeyCode.D );
 	}
 	
 	// Update is called once per frame
@@ -60,14 +62,23 @@ public class PlayerInput : MonoBehaviour
 		
 		playerMove.DuckHeld( i.GetButton( "Duck" ) );
 		
-		if ( i.GetButtonDown( "DrawGun" ) )
+		if ( i.GetButton( "DrawGun" ) )
 		{
 			player.DrawGun();
+		}
+		else
+		{
+			player.HolsterGun();
 		}
 		
 		if ( i.GetButtonDown( "FireGun" ) )
 		{
 			player.FireGun();
+		}
+		
+		if ( i.GetButtonDown( "Dash" ) )
+		{
+			player.Dash();
 		}
 
 	}

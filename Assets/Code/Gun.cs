@@ -10,6 +10,8 @@ public class Gun : MonoBehaviour
 	[SerializeField]
 	float _fireDelay = 0.25f;
 	
+	float _drawingTime = 0.25f;
+	
 	GameTimer _fireDelayTimer;
 	
 	[SerializeField]
@@ -20,23 +22,58 @@ public class Gun : MonoBehaviour
 	[SerializeField]
 	Transform _bulletStartPoint;
 	
+	GameTimer _drawingTimer;
+	bool _drawn = false;
+	
+	bool _fireWhenAble = false;
+	
+	public bool isDrawn
+	{
+		get { return _drawn; }
+	}
+	
 	void Awake()
 	{
 		_fireDelayTimer = new GameTimer(_fireDelay);
 		
+		_drawingTime = _gunAnimation["Gun Draw"].length;
+		_drawingTimer = new GameTimer(_drawingTime);
+		
 		_bulletPool = GenericPool<Bullet>.CreatePool(_bulletPrefab, 30);
+		
+		_gunAnimation.Play("Gun Draw");
+		_gunAnimation.Sample();
+		_gunAnimation.Stop();
 	}
 	
-	public void Draw( bool draw )
+	public void Draw()
 	{
-		gameObject.SetActive(draw);
-		
-		if ( draw )
+		if ( !_drawingTimer.running )
 		{
-			_gunAnimation.Play("Gun Recoil");
+			_fireWhenAble = false;
+			_drawingTimer.Reset();
+			
+			gameObject.SetActive(true);
+			
+			/*_gunAnimation.Play("Gun Recoil");
 			_gunAnimation["Gun Recoil"].normalizedTime = 0;
 			_gunAnimation.Sample();
-			_gunAnimation.Stop();
+			_gunAnimation.Stop();*/
+			_gunAnimation.Play("Gun Draw");
+		}
+	}
+	
+	public void Holster()
+	{
+		if ( _fireDelayTimer.running )
+		{
+			return;
+		}
+		
+		if ( isDrawn )
+		{
+			_gunAnimation.Play("Gun Holster");
+			_drawn = false;
 		}
 	}
 	
@@ -49,11 +86,31 @@ public class Gun : MonoBehaviour
 				_fireDelayTimer.StopTimer();
 			}
 		}
+		
+		if ( _drawingTimer.running )
+		{
+			if ( _drawingTimer.Update(GameTime.deltaTime) )
+			{
+				_drawingTimer.StopTimer();
+				_drawn = true;
+				
+				if ( _fireWhenAble )
+				{
+					Fire();
+				}
+			}
+		}
 	}
 	
 	public void Fire()
 	{
-		//Debug.Log("bang!");
+		if ( !isDrawn )
+		{
+			Draw();
+			_fireWhenAble = true;
+			return;
+		}
+		
 		if ( !_fireDelayTimer.running )
 		{
 			_gunAnimation.Stop();
