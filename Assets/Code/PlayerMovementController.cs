@@ -379,7 +379,6 @@ public class PlayerMovementController : MovementController
 		float slideSpeed = _wallSlideSpeed;
 		if ( _inputVector.y < -0.1f )
 		{
-			Debug.Log("fall faster");
 			slideSpeed = _wallSlideSpeed * 4;
 		}
 		
